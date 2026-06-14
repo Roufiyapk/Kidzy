@@ -1,0 +1,1977 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "name": "Admin",
+      "email": "admin@gmail.com",
+      "password": "123456",
+      "role": "admin",
+      "blocked": false
+    },
+    {
+      "name": "Roufiya PK",
+      "email": "pkroufiya9119@gmail.com",
+      "password": "1234",
+      "id": "Y5-OXjt8hEg",
+      "role": "user",
+      "blocked": false
+    },
+    {
+      "name": "Rafna",
+      "email": "Rafna@gmail.com",
+      "password": "1234",
+      "role": "user",
+      "blocked": false,
+      "id": "XhkdWquOF60"
+    },
+    {
+      "name": "Muhsin",
+      "email": "Muhsin@gmail.com",
+      "password": "1234",
+      "role": "user",
+      "blocked": false,
+      "id": "KXNUdBUgnr4",
+      "phone": "",
+      "address": ""
+    },
+    {
+      "name": "Ahsana",
+      "email": "Ahsana@gmail.com",
+      "password": "1234",
+      "role": "user",
+      "blocked": false,
+      "id": "DvA9zf-4qUo"
+    },
+    {
+      "name": "Jasla",
+      "email": "Jasla@gmail.com",
+      "password": "1234",
+      "role": "user",
+      "blocked": false,
+      "id": "TOTSfpAGZAk"
+    }
+  ],
+  "products": [
+    {
+      "id": "1",
+      "name": "Denim Set",
+      "category": "Girls",
+      "price": 299,
+      "age": "2-6 years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 11
+        },
+        {
+          "size": "3-4 years",
+          "stock": 12
+        },
+        {
+          "size": "4-5 years",
+          "stock": 12
+        },
+        {
+          "size": "5-6 years",
+          "stock": 12
+        }
+      ],
+      "image": "/images/girl1.jpg",
+      "description": "Elegant cream ruffle top paired with trendy wide-leg denim pants.",
+      "bestSeller": true,
+      "newArrival": false,
+      "deleted": false
+    },
+    {
+      "id": "2",
+      "name": "Ruffle Co-ord Set",
+      "category": "Girls",
+      "price": 1699,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 7
+        },
+        {
+          "size": "3-4 years",
+          "stock": 4
+        },
+        {
+          "size": "4-5 years",
+          "stock": 6
+        },
+        {
+          "size": "5-6 years",
+          "stock": 7
+        }
+      ],
+      "image": "/images/girl2.jpg",
+      "description": "Elegant black ruffle top paired with a flowy white printed skirt.",
+      "bestSeller": true
+    },
+    {
+      "id": "3",
+      "name": "Olive Frill Co-ord Set",
+      "category": "Girls",
+      "price": 1999,
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 3
+        },
+        {
+          "size": "7-8 years",
+          "stock": 8
+        },
+        {
+          "size": "8-9 years",
+          "stock": 2
+        },
+        {
+          "size": "9-10 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl3.jpg",
+      "description": "Olive green co-ord set for girls aged 6–10 years.",
+      "age": "6-10 Years",
+      "bestSeller": false,
+      "newArrival": true
+    },
+    {
+      "id": "4",
+      "name": "Girls Fashion Dress",
+      "category": "Girls",
+      "price": 999,
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 4
+        },
+        {
+          "size": "7-8 years",
+          "stock": 6
+        },
+        {
+          "size": "8-9 years",
+          "stock": 2
+        },
+        {
+          "size": "9-10 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl4.jpg",
+      "description": "Comfortable and elegant party dress for girls aged 6–10 years.",
+      "age": "6-10 Years",
+      "bestSeller": false,
+      "newArrival": false
+    },
+    {
+      "id": "5",
+      "name": "Casual Girls Set",
+      "category": "Girls",
+      "price": 2099,
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 6
+        },
+        {
+          "size": "1-2 years",
+          "stock": 11
+        }
+      ],
+      "image": "/images/girl5.jpg",
+      "description": "Soft casual wear for girls aged 0–2 years.",
+      "bestSeller": false,
+      "newArrival": false
+    },
+    {
+      "id": "6",
+      "name": "Stylish Kids Wear",
+      "category": "Girls",
+      "price": 1450,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 3
+        },
+        {
+          "size": "3-4 years",
+          "stock": 6
+        },
+        {
+          "size": "4-5 years",
+          "stock": 2
+        },
+        {
+          "size": "5-6 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl6.jpg",
+      "description": "Cute and stylish outfit for girls."
+    },
+    {
+      "id": "7",
+      "name": "Girls Fashion Set",
+      "category": "Girls",
+      "price": 899,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 3
+        },
+        {
+          "size": "1-2 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl7.jpg",
+      "description": "Modern fashion wear for little girls."
+    },
+    {
+      "id": "8",
+      "name": "Elegant Kids Dress",
+      "category": "Girls",
+      "price": 1299,
+      "age": "6-10Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 4
+        },
+        {
+          "size": "7-8 years",
+          "stock": 7
+        },
+        {
+          "size": "8-9 years",
+          "stock": 11
+        },
+        {
+          "size": "9-10 years",
+          "stock": 10
+        }
+      ],
+      "image": "/images/girl8.jpg",
+      "description": "Elegant outfit for kids.",
+      "bestSeller": false
+    },
+    {
+      "id": "9",
+      "name": "Girls Casual Outfit",
+      "category": "Girls",
+      "price": 1799,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 0
+        },
+        {
+          "size": "1-2 years",
+          "stock": 0
+        }
+      ],
+      "image": "/images/girl9.jpg",
+      "description": "Comfortable daily wear."
+    },
+    {
+      "id": "10",
+      "name": "Girls Trendy Dress",
+      "category": "Girls",
+      "price": 1450,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 3
+        },
+        {
+          "size": "1-2 years",
+          "stock": 3
+        }
+      ],
+      "image": "/images/girl10.jpg",
+      "description": "Trendy outfit for toddlers.",
+      "newArrival": true
+    },
+    {
+      "id": "11",
+      "name": "Girls Stylish Wear",
+      "category": "Girls",
+      "price": 1200,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 7
+        },
+        {
+          "size": "3-4 years",
+          "stock": 5
+        },
+        {
+          "size": "4-5 years",
+          "stock": 7
+        },
+        {
+          "size": "5-6 years",
+          "stock": 7
+        }
+      ],
+      "image": "/images/girl11.jpg",
+      "description": "Fashionable wear for girls.",
+      "bestSeller": false,
+      "newArrival": true
+    },
+    {
+      "id": "12",
+      "name": "Girls co-ord set",
+      "category": "Girls",
+      "price": 1299,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 4
+        },
+        {
+          "size": "7-8 years",
+          "stock": 5
+        },
+        {
+          "size": "8-9 years",
+          "stock": 3
+        },
+        {
+          "size": "9-10 years",
+          "stock": 6
+        }
+      ],
+      "image": "/images/girl12.jpg",
+      "description": "Premium stylish outfit."
+    },
+    {
+      "id": "13",
+      "name": "Girls Elegant Outfit",
+      "category": "Girls",
+      "price": 2190,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 9
+        },
+        {
+          "size": "7-8 years",
+          "stock": 8
+        },
+        {
+          "size": "8-9 years",
+          "stock": 9
+        },
+        {
+          "size": "9-10 years",
+          "stock": 9
+        }
+      ],
+      "image": "/images/girl13.jpg",
+      "description": "Elegant and soft outfit.",
+      "newArrival": true,
+      "deleted": false
+    },
+    {
+      "id": "14",
+      "name": "Girls Cute Set",
+      "category": "Girls",
+      "price": 1649,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 4
+        },
+        {
+          "size": "3-4 years",
+          "stock": 4
+        },
+        {
+          "size": "4-5 years",
+          "stock": 4
+        },
+        {
+          "size": "5-6 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl14.jpg",
+      "description": "Cute kids wear set."
+    },
+    {
+      "id": "15",
+      "name": "Girls Fashion Dress",
+      "category": "Girls",
+      "price": 1299,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 2
+        },
+        {
+          "size": "7-8 years",
+          "stock": 2
+        },
+        {
+          "size": "8-9 years",
+          "stock": 3
+        },
+        {
+          "size": "9-10 years",
+          "stock": 2
+        }
+      ],
+      "image": "/images/girl15.jpg",
+      "description": "Stylish fashion dress."
+    },
+    {
+      "id": "16",
+      "name": "Girls Modern Wear",
+      "category": "Girls",
+      "price": 1999,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 10
+        },
+        {
+          "size": "7-8 years",
+          "stock": 10
+        },
+        {
+          "size": "8-9 years",
+          "stock": 10
+        },
+        {
+          "size": "9-10 years",
+          "stock": 10
+        }
+      ],
+      "image": "/images/girl16.jpg",
+      "description": "Modern wear collection."
+    },
+    {
+      "id": "17",
+      "name": "Boys Casual Set",
+      "category": "Boys",
+      "price": 1299,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 5
+        },
+        {
+          "size": "7-8 years",
+          "stock": 6
+        },
+        {
+          "size": "8-9 years",
+          "stock": 8
+        },
+        {
+          "size": "9-10 years",
+          "stock": 9
+        }
+      ],
+      "image": "/images/boys1.jpg",
+      "description": "Comfortable casual wear for boys."
+    },
+    {
+      "id": "18",
+      "name": "Boys Denim Outfit",
+      "category": "Boys",
+      "price": 950,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 5
+        },
+        {
+          "size": "3-4 years",
+          "stock": 4
+        },
+        {
+          "size": "4-5 years",
+          "stock": 5
+        },
+        {
+          "size": "5-6 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/boys2.jpg",
+      "description": "Stylish denim wear for boys."
+    },
+    {
+      "id": "19",
+      "name": "Boys Party Wear",
+      "category": "Boys",
+      "price": 1440,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 7
+        },
+        {
+          "size": "1-2 years",
+          "stock": 6
+        }
+      ],
+      "image": "/images/boys3.jpg",
+      "description": "Elegant party wear for boys.",
+      "newArrival": false
+    },
+    {
+      "id": "20",
+      "name": "Boys Trendy Outfit",
+      "category": "Boys",
+      "price": 1599,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 7
+        },
+        {
+          "size": "1-2 years",
+          "stock": 7
+        }
+      ],
+      "image": "/images/boys4.jpg",
+      "description": "Trendy and comfortable wear.",
+      "newArrival": true
+    },
+    {
+      "id": "21",
+      "name": "Boys Stylish Set",
+      "category": "Boys",
+      "price": 1350,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 10
+        },
+        {
+          "size": "3-4 years",
+          "stock": 10
+        },
+        {
+          "size": "4-5 years",
+          "stock": 10
+        },
+        {
+          "size": "5-6 years",
+          "stock": 10
+        }
+      ],
+      "image": "/images/boys5.jpg",
+      "description": "Stylish outfit collection."
+    },
+    {
+      "id": "22",
+      "name": "Boys Cotton Wear",
+      "category": "Boys",
+      "price": 1240,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 1
+        },
+        {
+          "size": "3-4 years",
+          "stock": 1
+        },
+        {
+          "size": "4-5 years",
+          "stock": 1
+        },
+        {
+          "size": "5-6 years",
+          "stock": 1
+        }
+      ],
+      "image": "/images/boys6.jpg",
+      "description": "Soft cotton wear for boys.",
+      "newArrival": true
+    },
+    {
+      "id": "23",
+      "name": "Boys modern Set",
+      "category": "Boys",
+      "price": 1290,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 20
+        },
+        {
+          "size": "3-4 years",
+          "stock": 20
+        },
+        {
+          "size": "4-5 years",
+          "stock": 20
+        },
+        {
+          "size": "5-6 years",
+          "stock": 20
+        }
+      ],
+      "image": "/images/boys7.jpg",
+      "description": "Premium kids fashion wear.",
+      "newArrival": true
+    },
+    {
+      "id": "24",
+      "name": "Boys Elegant Dress",
+      "category": "Boys",
+      "price": 1540,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 4
+        },
+        {
+          "size": "7-8 years",
+          "stock": 4
+        },
+        {
+          "size": "8-9 years",
+          "stock": 4
+        },
+        {
+          "size": "9-10 years",
+          "stock": 4
+        }
+      ],
+      "image": "/images/boys8.jpg",
+      "description": "Elegant outfit for boys.",
+      "bestSeller": true,
+      "newArrival": false
+    },
+    {
+      "id": "25",
+      "name": "Boys Fashion Wear",
+      "category": "Boys",
+      "price": 1290,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 3
+        },
+        {
+          "size": "7-8 years",
+          "stock": 3
+        },
+        {
+          "size": "8-9 years",
+          "stock": 3
+        },
+        {
+          "size": "9-10 years",
+          "stock": 3
+        }
+      ],
+      "image": "/images/boys9.jpg",
+      "description": "Stylish fashion collection."
+    },
+    {
+      "id": "26",
+      "name": "Boys Classic Outfit",
+      "category": "Boys",
+      "price": 1990,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 0
+        },
+        {
+          "size": "7-8 years",
+          "stock": 0
+        },
+        {
+          "size": "8-9 years",
+          "stock": 0
+        },
+        {
+          "size": "9-10 years",
+          "stock": 0
+        }
+      ],
+      "image": "/images/boys10.jpg",
+      "description": "Classic boys outfit."
+    },
+    {
+      "id": "27",
+      "name": "Boys Smart Wear",
+      "category": "Boys",
+      "price": 1860,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 5
+        },
+        {
+          "size": "7-8 years",
+          "stock": 6
+        },
+        {
+          "size": "8-9 years",
+          "stock": 6
+        },
+        {
+          "size": "9-10 years",
+          "stock": 6
+        }
+      ],
+      "image": "/images/boys11.jpg",
+      "description": "Smart casual boys wear.",
+      "bestSeller": true,
+      "newArrival": false
+    },
+    {
+      "id": "28",
+      "name": "Boys Modern Set",
+      "category": "Boys",
+      "price": 1890,
+      "age": "6-10 Years",
+      "sizes": [
+        {
+          "size": "6-7 years",
+          "stock": 4
+        },
+        {
+          "size": "7-8 years",
+          "stock": 5
+        },
+        {
+          "size": "8-9 years",
+          "stock": 5
+        },
+        {
+          "size": "9-10 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/boys12.jpg",
+      "description": "Modern style boys set."
+    },
+    {
+      "id": "29",
+      "name": "Boys casual Wear",
+      "category": "Boys",
+      "price": 1770,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 5
+        },
+        {
+          "size": "3-4 years",
+          "stock": 5
+        },
+        {
+          "size": "4-5 years",
+          "stock": 5
+        },
+        {
+          "size": "5-6 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/boys13.jpg",
+      "description": "Daily wear collection.",
+      "bestSeller": true
+    },
+    {
+      "id": "30",
+      "name": "Boys Kids Outfit",
+      "category": "Boys",
+      "price": 1190,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 6
+        },
+        {
+          "size": "3-4 years",
+          "stock": 7
+        },
+        {
+          "size": "4-5 years",
+          "stock": 7
+        },
+        {
+          "size": "5-6 years",
+          "stock": 7
+        }
+      ],
+      "image": "/images/boys14.jpg",
+      "description": "Comfortable boys outfit."
+    },
+    {
+      "id": "31",
+      "name": "Boys Casual Fashion",
+      "category": "Boys",
+      "price": 890,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 9
+        },
+        {
+          "size": "3-4 years",
+          "stock": 9
+        },
+        {
+          "size": "4-5 years",
+          "stock": 9
+        },
+        {
+          "size": "5-6 years",
+          "stock": 9
+        }
+      ],
+      "image": "/images/boys15.jpg",
+      "description": "Casual fashion wear."
+    },
+    {
+      "id": "32",
+      "name": "Baby Soft Wear",
+      "category": "Baby",
+      "price": 999,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 3
+        },
+        {
+          "size": "3-6 months",
+          "stock": 3
+        }
+      ],
+      "image": "/images/baby1.jpg",
+      "description": "Soft and comfortable baby wear."
+    },
+    {
+      "id": "33",
+      "name": "Baby Cotton Outfit",
+      "category": "Baby",
+      "price": 1290,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 5
+        },
+        {
+          "size": "3-6 months",
+          "stock": 4
+        }
+      ],
+      "image": "/images/baby2.jpg",
+      "description": "Cotton baby outfit for comfort."
+    },
+    {
+      "id": "34",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 899,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 5
+        },
+        {
+          "size": "3-6 months",
+          "stock": 4
+        }
+      ],
+      "image": "/images/baby3.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "35",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1199,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 5
+        },
+        {
+          "size": "3-6 months",
+          "stock": 4
+        }
+      ],
+      "image": "/images/baby4.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "36",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 990,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 5
+        },
+        {
+          "size": "9-12 months",
+          "stock": 5
+        }
+      ],
+      "image": "/images/baby5.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "37",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1099,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 6
+        },
+        {
+          "size": "9-12 months",
+          "stock": 6
+        }
+      ],
+      "image": "/images/baby6.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "38",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1690,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 5
+        },
+        {
+          "size": "9-12 months",
+          "stock": 4
+        }
+      ],
+      "image": "/images/baby7.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "39",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 999,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 3
+        },
+        {
+          "size": "9-12 months",
+          "stock": 3
+        }
+      ],
+      "image": "/images/baby8.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "40",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1290,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 0
+        },
+        {
+          "size": "9-12 months",
+          "stock": 0
+        }
+      ],
+      "image": "/images/baby9.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "41",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1399,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 8
+        },
+        {
+          "size": "9-12 months",
+          "stock": 8
+        }
+      ],
+      "image": "/images/baby10.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "42",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1450,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 0
+        },
+        {
+          "size": "9-12 months",
+          "stock": 6
+        }
+      ],
+      "image": "/images/baby11.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "43",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 890,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 6
+        },
+        {
+          "size": "9-12 months",
+          "stock": 6
+        }
+      ],
+      "image": "/images/baby12.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "44",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1690,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 9
+        },
+        {
+          "size": "9-12 months",
+          "stock": 9
+        }
+      ],
+      "image": "/images/baby14.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "45",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1910,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 5
+        },
+        {
+          "size": "9-12 months",
+          "stock": 5
+        }
+      ],
+      "image": "/images/baby15.jpg",
+      "description": "Premium baby fashion wear."
+    },
+    {
+      "id": "46",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 1299,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 8
+        },
+        {
+          "size": "3-6 months",
+          "stock": 8
+        }
+      ],
+      "image": "/images/baby16.jpg",
+      "description": "Premium baby fashion wear.",
+      "deleted": false
+    },
+    {
+      "id": "47",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 999,
+      "age": "6-12 Months",
+      "sizes": [
+        {
+          "size": "6-9 months",
+          "stock": 11
+        },
+        {
+          "size": "9-12 months",
+          "stock": 10
+        }
+      ],
+      "image": "/images/baby17.jpg",
+      "description": "Premium baby fashion wear.",
+      "deleted": false
+    },
+    {
+      "id": "IwWEC2UowmE",
+      "name": "Girls Stylish Wear",
+      "price": 1200,
+      "category": "Girls",
+      "age": "2-6 Years",
+      "image": "/images/girl11.jpg",
+      "description": "",
+      "bestSeller": false,
+      "newArrival": false,
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 1
+        },
+        {
+          "size": "3-4 years",
+          "stock": 1
+        },
+        {
+          "size": "4-5 years",
+          "stock": 1
+        },
+        {
+          "size": "5-6 years",
+          "stock": 0
+        }
+      ],
+      "deleted": false
+    }
+  ],
+  "wishlist": [],
+  "cart": [
+    {
+      "id": "4LdWzWmF_h4",
+      "name": "Girls Cute Set",
+      "category": "Girls",
+      "price": 1649,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 4
+        },
+        {
+          "size": "3-4 years",
+          "stock": 4
+        },
+        {
+          "size": "4-5 years",
+          "stock": 4
+        },
+        {
+          "size": "5-6 years",
+          "stock": 5
+        }
+      ],
+      "image": "/images/girl14.jpg",
+      "description": "Cute kids wear set.",
+      "userId": "Dy0_sS84HuQ",
+      "productId": "14",
+      "qty": 1
+    },
+    {
+      "id": "3lmQ1YX8n8c",
+      "name": "Baby Premium Set",
+      "category": "Baby",
+      "price": 899,
+      "age": "0-6 Months",
+      "sizes": [
+        {
+          "size": "0-3 months",
+          "stock": 5
+        },
+        {
+          "size": "3-6 months",
+          "stock": 4
+        }
+      ],
+      "image": "/images/baby3.jpg",
+      "description": "Premium baby fashion wear.",
+      "userId": "DvA9zf-4qUo",
+      "productId": "34",
+      "qty": 1
+    }
+  ],
+  "orders": [
+    {
+      "userId": "Y5-OXjt8hEg",
+      "items": [
+        {
+          "id": "27pk_UWhRh4",
+          "name": "Ruffle Co-ord Set",
+          "category": "Girls",
+          "price": 1699,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 7
+            },
+            {
+              "size": "3-4 years",
+              "stock": 6
+            },
+            {
+              "size": "4-5 years",
+              "stock": 6
+            },
+            {
+              "size": "5-6 years",
+              "stock": 7
+            }
+          ],
+          "image": "/images/girl2.jpg",
+          "description": "Elegant black ruffle top paired with a flowy white printed skirt.",
+          "selectedSize": "3-4 years",
+          "qty": 1,
+          "productId": "2",
+          "userId": "Y5-OXjt8hEg"
+        },
+        {
+          "id": "hiDtVHr34Po",
+          "name": "Girls Fashion Set",
+          "category": "Girls",
+          "price": 899,
+          "age": "0-2 Years",
+          "sizes": [
+            {
+              "size": "0-1 years",
+              "stock": 4
+            },
+            {
+              "size": "1-2 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/girl7.jpg",
+          "description": "Modern fashion wear for little girls.",
+          "selectedSize": "0-1 years",
+          "qty": 1,
+          "productId": "7",
+          "userId": "Y5-OXjt8hEg"
+        }
+      ],
+      "totalPrice": 2598,
+      "customer": {
+        "name": "Roufiya PK",
+        "address": "dfghj",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Delivered"
+      },
+      "createdAt": "2026-03-26T16:07:11.221Z",
+      "id": "FfrqfvAGRGY"
+    },
+    {
+      "userId": "Y5-OXjt8hEg",
+      "items": [
+        {
+          "id": "33",
+          "name": "Baby Cotton Outfit",
+          "category": "Baby",
+          "price": 1290,
+          "age": "0-6 Months",
+          "sizes": [
+            {
+              "size": "0-3 months",
+              "stock": 5
+            },
+            {
+              "size": "3-6 months",
+              "stock": 5
+            }
+          ],
+          "image": "/images/baby2.jpg",
+          "description": "Cotton baby outfit for comfort.",
+          "selectedSize": "3-6 months",
+          "qty": 1,
+          "productId": "33",
+          "userId": "Y5-OXjt8hEg"
+        }
+      ],
+      "totalPrice": 1290,
+      "customer": {
+        "name": "Roufiya PK",
+        "address": "xsdfxgcvhb",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Out for Delivery"
+      },
+      "createdAt": "2026-04-26T16:24:26.937Z",
+      "id": "ysc4y2Qks60"
+    },
+    {
+      "userId": "KXNUdBUgnr4",
+      "items": [
+        {
+          "id": "27",
+          "name": "Boys Smart Wear",
+          "category": "Boys",
+          "price": 1860,
+          "age": "6-10 Years",
+          "sizes": [
+            {
+              "size": "6-7 years",
+              "stock": 6
+            },
+            {
+              "size": "7-8 years",
+              "stock": 6
+            },
+            {
+              "size": "8-9 years",
+              "stock": 6
+            },
+            {
+              "size": "9-10 years",
+              "stock": 6
+            }
+          ],
+          "image": "/images/boys11.jpg",
+          "description": "Smart casual boys wear.",
+          "selectedSize": "6-7 years",
+          "qty": 1,
+          "productId": "27",
+          "userId": "KXNUdBUgnr4"
+        }
+      ],
+      "totalPrice": 1860,
+      "customer": {
+        "name": "Muhsin",
+        "address": "dfghbjk",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Shipped"
+      },
+      "createdAt": "2026-04-26T17:00:52.535Z",
+      "id": "7XPQOl_ToXY"
+    },
+    {
+      "userId": "KXNUdBUgnr4",
+      "items": [
+        {
+          "id": "kMOW2ZG3JJ4",
+          "name": "Baby Premium Set",
+          "category": "Baby",
+          "price": 899,
+          "age": "0-6 Months",
+          "sizes": [
+            {
+              "size": "0-3 months",
+              "stock": 5
+            },
+            {
+              "size": "3-6 months",
+              "stock": 5
+            }
+          ],
+          "image": "/images/baby3.jpg",
+          "description": "Premium baby fashion wear.",
+          "selectedSize": "3-6 months",
+          "qty": 1,
+          "productId": "34",
+          "userId": "KXNUdBUgnr4"
+        },
+        {
+          "id": "GBTVBNqEfwc",
+          "name": "Baby Premium Set",
+          "category": "Baby",
+          "price": 1199,
+          "age": "0-6 Months",
+          "sizes": [
+            {
+              "size": "0-3 months",
+              "stock": 5
+            },
+            {
+              "size": "3-6 months",
+              "stock": 5
+            }
+          ],
+          "image": "/images/baby4.jpg",
+          "description": "Premium baby fashion wear.",
+          "selectedSize": "3-6 months",
+          "qty": 1,
+          "productId": "35",
+          "userId": "KXNUdBUgnr4"
+        }
+      ],
+      "totalPrice": 2098,
+      "customer": {
+        "name": "Muhsin",
+        "address": "edrtgfhuj",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Delivered"
+      },
+      "createdAt": "2026-03-27T15:36:37.603Z",
+      "id": "tmUyXmTaHn4"
+    },
+    {
+      "userId": "DvA9zf-4qUo",
+      "items": [
+        {
+          "id": "5Vp33i6_BT4",
+          "name": "Girls Elegant Outfit",
+          "category": "Girls",
+          "price": 2190,
+          "age": "6-10 Years",
+          "sizes": [
+            {
+              "size": "6-7 years",
+              "stock": 9
+            },
+            {
+              "size": "7-8 years",
+              "stock": 9
+            },
+            {
+              "size": "8-9 years",
+              "stock": 9
+            },
+            {
+              "size": "9-10 years",
+              "stock": 9
+            }
+          ],
+          "image": "/images/girl13.jpg",
+          "description": "Elegant and soft outfit.",
+          "newArrival": true,
+          "deleted": true,
+          "selectedSize": "7-8 years",
+          "qty": 1,
+          "productId": "13",
+          "userId": "DvA9zf-4qUo"
+        },
+        {
+          "id": "wKGtyelsPac",
+          "name": "Girls Stylish Wear",
+          "category": "Girls",
+          "price": 1200,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 7
+            },
+            {
+              "size": "3-4 years",
+              "stock": 6
+            },
+            {
+              "size": "4-5 years",
+              "stock": 7
+            },
+            {
+              "size": "5-6 years",
+              "stock": 7
+            }
+          ],
+          "image": "/images/girl11.jpg",
+          "description": "Fashionable wear for girls.",
+          "bestSeller": false,
+          "newArrival": true,
+          "selectedSize": "3-4 years",
+          "qty": 1,
+          "productId": "11",
+          "userId": "DvA9zf-4qUo"
+        }
+      ],
+      "totalPrice": 3390,
+      "customer": {
+        "name": "Ahsana",
+        "address": "dfghjkl",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Delivered"
+      },
+      "createdAt": "2026-02-27T15:37:43.158Z",
+      "id": "wu20R4Z2fEc"
+    },
+    {
+      "userId": "TOTSfpAGZAk",
+      "items": [
+        {
+          "id": "Rc5bvU8s0n4",
+          "name": "Boys Party Wear",
+          "category": "Boys",
+          "price": 1440,
+          "age": "0-2 Years",
+          "sizes": [
+            {
+              "size": "0-1 years",
+              "stock": 7
+            },
+            {
+              "size": "1-2 years",
+              "stock": 7
+            }
+          ],
+          "image": "/images/boys3.jpg",
+          "description": "Elegant party wear for boys.",
+          "newArrival": false,
+          "selectedSize": "1-2 years",
+          "qty": 1,
+          "productId": "19",
+          "userId": "TOTSfpAGZAk"
+        },
+        {
+          "id": "FayuGSTlhBs",
+          "name": "Boys Modern Set",
+          "category": "Boys",
+          "price": 1890,
+          "age": "6-10 Years",
+          "sizes": [
+            {
+              "size": "6-7 years",
+              "stock": 5
+            },
+            {
+              "size": "7-8 years",
+              "stock": 5
+            },
+            {
+              "size": "8-9 years",
+              "stock": 5
+            },
+            {
+              "size": "9-10 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/boys12.jpg",
+          "description": "Modern style boys set.",
+          "selectedSize": "6-7 years",
+          "qty": 1,
+          "productId": "28",
+          "userId": "TOTSfpAGZAk"
+        }
+      ],
+      "totalPrice": 3330,
+      "customer": {
+        "name": "Jasla",
+        "address": "fcvgbhnj",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Delivered"
+      },
+      "createdAt": "2026-03-27T15:38:55.648Z",
+      "id": "MnuxnRwO66Q"
+    },
+    {
+      "userId": "XhkdWquOF60",
+      "items": [
+        {
+          "id": "h2vxn1xyWDQ",
+          "name": "Girls Cute Set",
+          "category": "Girls",
+          "price": 1649,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 5
+            },
+            {
+              "size": "3-4 years",
+              "stock": 5
+            },
+            {
+              "size": "4-5 years",
+              "stock": 5
+            },
+            {
+              "size": "5-6 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/girl14.jpg",
+          "description": "Cute kids wear set.",
+          "selectedSize": "2-3 years",
+          "qty": 1,
+          "productId": "14",
+          "userId": "XhkdWquOF60"
+        },
+        {
+          "id": "3xW8Lz5S4q8",
+          "name": "Girls Cute Set",
+          "category": "Girls",
+          "price": 1649,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 5
+            },
+            {
+              "size": "3-4 years",
+              "stock": 5
+            },
+            {
+              "size": "4-5 years",
+              "stock": 5
+            },
+            {
+              "size": "5-6 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/girl14.jpg",
+          "description": "Cute kids wear set.",
+          "selectedSize": "3-4 years",
+          "qty": 1,
+          "productId": "14",
+          "userId": "XhkdWquOF60"
+        },
+        {
+          "id": "yRBsJqxcJ0g",
+          "name": "Girls Cute Set",
+          "category": "Girls",
+          "price": 1649,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 5
+            },
+            {
+              "size": "3-4 years",
+              "stock": 5
+            },
+            {
+              "size": "4-5 years",
+              "stock": 5
+            },
+            {
+              "size": "5-6 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/girl14.jpg",
+          "description": "Cute kids wear set.",
+          "selectedSize": "4-5 years",
+          "qty": 1,
+          "productId": "14",
+          "userId": "XhkdWquOF60"
+        }
+      ],
+      "totalPrice": 4947,
+      "customer": {
+        "name": "Rafna",
+        "address": "gfhbjnk",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Processing"
+      },
+      "createdAt": "2026-05-27T15:45:01.445Z",
+      "id": "7kBNysG5EZ8"
+    },
+    {
+      "userId": "XhkdWquOF60",
+      "items": [
+        {
+          "id": "1",
+          "name": "Denim Set",
+          "category": "Girls",
+          "price": 1990,
+          "age": "2-6 years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 12
+            },
+            {
+              "size": "3-4 years",
+              "stock": 12
+            },
+            {
+              "size": "4-5 years",
+              "stock": 12
+            },
+            {
+              "size": "5-6 years",
+              "stock": 12
+            }
+          ],
+          "image": "/images/girl1.jpg",
+          "description": "Elegant cream ruffle top paired with trendy wide-leg denim pants.",
+          "bestSeller": true,
+          "newArrival": false,
+          "selectedSize": "2-3 years",
+          "qty": 1,
+          "productId": "1",
+          "userId": "XhkdWquOF60"
+        }
+      ],
+      "totalPrice": 1990,
+      "customer": {
+        "name": "Rafna",
+        "address": "ghjn",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Order Placed"
+      },
+      "createdAt": "2026-05-27T15:45:49.240Z",
+      "id": "gVWgjlXiqa0"
+    },
+    {
+      "userId": "TOTSfpAGZAk",
+      "items": [
+        {
+          "id": "YSznFNHmm20",
+          "name": "Boys Casual Set",
+          "category": "Boys",
+          "price": 1299,
+          "age": "6-10 Years",
+          "sizes": [
+            {
+              "size": "6-7 years",
+              "stock": 5
+            },
+            {
+              "size": "7-8 years",
+              "stock": 7
+            },
+            {
+              "size": "8-9 years",
+              "stock": 8
+            },
+            {
+              "size": "9-10 years",
+              "stock": 9
+            }
+          ],
+          "image": "/images/boys1.jpg",
+          "description": "Comfortable casual wear for boys.",
+          "selectedSize": "7-8 years",
+          "qty": 1,
+          "productId": "17",
+          "userId": "TOTSfpAGZAk"
+        },
+        {
+          "id": "KDycDSUk8G0",
+          "name": "Boys Kids Outfit",
+          "category": "Boys",
+          "price": 1190,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 7
+            },
+            {
+              "size": "3-4 years",
+              "stock": 7
+            },
+            {
+              "size": "4-5 years",
+              "stock": 7
+            },
+            {
+              "size": "5-6 years",
+              "stock": 7
+            }
+          ],
+          "image": "/images/boys14.jpg",
+          "description": "Comfortable boys outfit.",
+          "selectedSize": "2-3 years",
+          "qty": 1,
+          "productId": "30",
+          "userId": "TOTSfpAGZAk"
+        },
+        {
+          "id": "Hw4i6HTKtKw",
+          "name": "Baby Premium Set",
+          "category": "Baby",
+          "price": 1690,
+          "age": "6-12 Months",
+          "sizes": [
+            {
+              "size": "6-9 months",
+              "stock": 5
+            },
+            {
+              "size": "9-12 months",
+              "stock": 5
+            }
+          ],
+          "image": "/images/baby7.jpg",
+          "description": "Premium baby fashion wear.",
+          "selectedSize": "9-12 months",
+          "qty": 1,
+          "productId": "38",
+          "userId": "TOTSfpAGZAk"
+        }
+      ],
+      "totalPrice": 4179,
+      "customer": {
+        "name": "Jasla",
+        "address": "fcgvbhj",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "paymentStatus": "Pending",
+      "status": {
+        "status": "Delivered"
+      },
+      "createdAt": "2026-02-30T06:30:33.747Z",
+      "id": "VNQKo5r07HY"
+    },
+    {
+      "userId": "DvA9zf-4qUo",
+      "items": [
+        {
+          "id": "18",
+          "name": "Boys Denim Outfit",
+          "category": "Boys",
+          "price": 950,
+          "age": "2-6 Years",
+          "sizes": [
+            {
+              "size": "2-3 years",
+              "stock": 5
+            },
+            {
+              "size": "3-4 years",
+              "stock": 5
+            },
+            {
+              "size": "4-5 years",
+              "stock": 5
+            },
+            {
+              "size": "5-6 years",
+              "stock": 5
+            }
+          ],
+          "image": "/images/boys2.jpg",
+          "description": "Stylish denim wear for boys.",
+          "selectedSize": "3-4 years",
+          "qty": 1,
+          "productId": "18",
+          "userId": "DvA9zf-4qUo"
+        }
+      ],
+      "totalPrice": 950,
+      "customer": {
+        "name": "Ahsana",
+        "address": "gfbhjlkm",
+        "phone": "1234567890",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "status": "Order Placed",
+      "createdAt": "2026-05-30T07:13:13.263Z",
+      "id": "VArOtcT7iKs"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}
