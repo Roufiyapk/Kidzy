@@ -69,10 +69,10 @@ function ProductPage() {
 
 
 
-    const visibleProducts = products.filter((item) => !item.deleted);
+  const visibleProducts = products.filter((item) => !item.deleted);
 
 
-    const filteredProducts = visibleProducts
+  const filteredProducts = visibleProducts
     .filter((item) => {
       if (selectedAge === "All") return true;
       return item.age === selectedAge;
@@ -155,11 +155,10 @@ function ProductPage() {
           <button
             key={age}
             onClick={() => setSelectedAge(age)}
-            className={`px-3 sm:px-5 py-2 rounded-full border text-xs sm:text-sm transition ${
-              selectedAge === age
+            className={`px-3 sm:px-5 py-2 rounded-full border text-xs sm:text-sm transition ${selectedAge === age
                 ? "bg-black text-white border-black"
                 : "bg-white text-black hover:bg-gray-100"
-            }`}
+              }`}
           >
             {age}
           </button>
@@ -190,9 +189,8 @@ function ProductPage() {
                     e.stopPropagation();
                     handleWishlist(item, isInWishlist);
                   }}
-                  className={`absolute top-3 right-3 text-2xl z-10 ${
-                    isInWishlist ? "text-red-500" : "text-gray-300"
-                  }`}
+                  className={`absolute top-3 right-3 text-2xl z-10 ${isInWishlist ? "text-red-500" : "text-gray-300"
+                    }`}
                 />
 
                 <img
@@ -202,14 +200,14 @@ function ProductPage() {
                 />
 
                 {item.sizes?.every(
-  (size) => size.stock === 0
-) && (
-  <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
-    <p className="text-white font-bold text-lg">
-      OUT OF STOCK
-    </p>
-  </div>
-)}
+                  (size) => size.stock === 0
+                ) && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-xl">
+                      <p className="text-white font-bold text-lg">
+                        OUT OF STOCK
+                      </p>
+                    </div>
+                  )}
               </div>
 
               <h2 className="mt-4 font-semibold text-center text-sm sm:text-base line-clamp-1">

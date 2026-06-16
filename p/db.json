@@ -480,7 +480,7 @@
         },
         {
           "size": "7-8 years",
-          "stock": 6
+          "stock": 5
         },
         {
           "size": "8-9 years",
@@ -1202,7 +1202,61 @@
       "deleted": false
     }
   ],
-  "wishlist": [],
+  "wishlist": [
+    {
+      "id": "Bc6eN1Vaa6s",
+      "name": "Girls Trendy Dress",
+      "category": "Girls",
+      "price": 1450,
+      "age": "0-2 Years",
+      "sizes": [
+        {
+          "size": "0-1 years",
+          "stock": 3
+        },
+        {
+          "size": "1-2 years",
+          "stock": 3
+        }
+      ],
+      "image": "/images/girl10.jpg",
+      "description": "Trendy outfit for toddlers.",
+      "newArrival": true,
+      "productId": "10",
+      "userId": "DvA9zf-4qUo"
+    },
+    {
+      "id": "aO74zc4qzp0",
+      "name": "Girls Stylish Wear",
+      "category": "Girls",
+      "price": 1200,
+      "age": "2-6 Years",
+      "sizes": [
+        {
+          "size": "2-3 years",
+          "stock": 7
+        },
+        {
+          "size": "3-4 years",
+          "stock": 5
+        },
+        {
+          "size": "4-5 years",
+          "stock": 7
+        },
+        {
+          "size": "5-6 years",
+          "stock": 7
+        }
+      ],
+      "image": "/images/girl11.jpg",
+      "description": "Fashionable wear for girls.",
+      "bestSeller": false,
+      "newArrival": true,
+      "productId": "11",
+      "userId": "DvA9zf-4qUo"
+    }
+  ],
   "cart": [
     {
       "id": "4LdWzWmF_h4",
@@ -1235,25 +1289,33 @@
       "qty": 1
     },
     {
-      "id": "3lmQ1YX8n8c",
-      "name": "Baby Premium Set",
-      "category": "Baby",
-      "price": 899,
-      "age": "0-6 Months",
+      "id": "EDlm3bkRqJM",
+      "name": "Boys Casual Set",
+      "category": "Boys",
+      "price": 1299,
+      "age": "6-10 Years",
       "sizes": [
         {
-          "size": "0-3 months",
+          "size": "6-7 years",
           "stock": 5
         },
         {
-          "size": "3-6 months",
-          "stock": 4
+          "size": "7-8 years",
+          "stock": 5
+        },
+        {
+          "size": "8-9 years",
+          "stock": 8
+        },
+        {
+          "size": "9-10 years",
+          "stock": 9
         }
       ],
-      "image": "/images/baby3.jpg",
-      "description": "Premium baby fashion wear.",
+      "image": "/images/boys1.jpg",
+      "description": "Comfortable casual wear for boys.",
       "userId": "DvA9zf-4qUo",
-      "productId": "34",
+      "productId": "17",
       "qty": 1
     }
   ],
@@ -1971,6 +2033,54 @@
       "status": "Order Placed",
       "createdAt": "2026-05-30T07:13:13.263Z",
       "id": "VArOtcT7iKs"
+    },
+    {
+      "userId": 1780465809932,
+      "items": [
+        {
+          "id": "cn183gGDDw0",
+          "name": "Boys Casual Set",
+          "category": "Boys",
+          "price": 1299,
+          "age": "6-10 Years",
+          "sizes": [
+            {
+              "size": "6-7 years",
+              "stock": 5
+            },
+            {
+              "size": "7-8 years",
+              "stock": 6
+            },
+            {
+              "size": "8-9 years",
+              "stock": 8
+            },
+            {
+              "size": "9-10 years",
+              "stock": 9
+            }
+          ],
+          "image": "/images/boys1.jpg",
+          "description": "Comfortable casual wear for boys.",
+          "selectedSize": "7-8 years",
+          "qty": 1,
+          "productId": "17",
+          "userId": 1780465809932
+        }
+      ],
+      "totalPrice": 1299,
+      "customer": {
+        "name": "n bv",
+        "address": "n  vc",
+        "phone": "9067543212",
+        "pincode": "123456",
+        "payment": "cod"
+      },
+      "paymentMethod": "cod",
+      "status": "Order Placed",
+      "createdAt": "2026-06-16T16:10:45.327Z",
+      "id": "9YIizDgz7lo"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

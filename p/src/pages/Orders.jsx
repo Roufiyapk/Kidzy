@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchOrders } from "../api/ordersApi";
 
-/* ---------------- SAFE STATUS HANDLER ---------------- */
 
 const getStatusText = (status) => {
   if (typeof status === "string") return status;
@@ -39,7 +38,7 @@ function Orders() {
 
   const user = JSON.parse(localStorage.getItem("user"));
 
-  /* ---------------- FIXED: LATEST ORDER FIRST ---------------- */
+  /*  FIXED: LATEST ORDER FIRST */
   const userOrders = (data || [])
     .filter((order) => order.userId === user?.id)
     .sort((a, b) => {

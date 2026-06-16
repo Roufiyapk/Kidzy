@@ -14,9 +14,9 @@ function Home() {
 
       <Banner />
       <CategoryPage/>
-      <NewDrops />
       <BestSellers />
-      <Footer/>
+
+      <NewDrops />
 
 
 
