@@ -1,125 +1,105 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import api from "../api/api";
-
-
 
 function Orders() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [successMessage, setSuccessMessage] = useState("");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [cancelOrderConfirmation, setCancelOrderConfirmation] = useState(null);
 
+  const [selectedOrder, setSelectedOrder] =
+    useState(null);
+
+  const [successMessage, setSuccessMessage] =
+    useState("");
+
+  const [
+    cancelOrderConfirmation,
+    setCancelOrderConfirmation,
+  ] = useState(null);
+
+  const [cancellingOrder, setCancellingOrder] =
+    useState(false);
 
   const user = JSON.parse(
     localStorage.getItem("user") || "null"
   );
 
-  // FETCH ONLY LOGGED-IN USER ORDERS
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) {
+      return "";
+    }
+
+    if (
+      imageUrl.startsWith("http://") ||
+      imageUrl.startsWith("https://") ||
+      imageUrl.startsWith("data:")
+    ) {
+      return imageUrl;
+    }
+
+    const baseURL =
+      api.defaults?.baseURL || "";
+
+    const backendBaseURL =
+      baseURL.replace(/\/api\/?$/, "");
+
+    if (imageUrl.startsWith("/")) {
+      return `${backendBaseURL}${imageUrl}`;
+    }
+
+    return `${backendBaseURL}/${imageUrl}`;
+  };
 
   useEffect(() => {
-    const loadOrders = async () => {
+    const getOrders = async () => {
       if (!user?.id) {
         setLoading(false);
         return;
       }
 
       try {
-        const response = await api.get("/orders");
+        setLoading(true);
 
-        const allOrders = Array.isArray(response.data)
-          ? response.data
-          : [];
-
-        const userOrders = allOrders.filter(
-          (order) =>
-            String(order.userId) === String(user.id)
+        const response = await api.get(
+          "/orders/my-orders"
         );
 
-        userOrders.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0) -
-            new Date(a.createdAt || 0)
-        );
+        const data =
+          response?.data?.data;
 
-        setOrders(userOrders);
+        if (Array.isArray(data)) {
+          setOrders(data);
+        } else {
+          setOrders([]);
+        }
       } catch (error) {
         console.error(
           "Failed to load orders:",
           error
         );
 
+        console.error(
+          "Backend response:",
+          error.response?.data
+        );
+
         toast.error(
-          "Failed to load your orders"
+          error.response?.data?.message ||
+            "Failed to load your orders"
         );
       } finally {
         setLoading(false);
       }
     };
 
-    loadOrders();
+    getOrders();
   }, [user?.id]);
-
-  // CANCEL ORDER
-  // Customer can cancel before the order is shipped.
-
-  const getOrderStatus = (order) => {
-    if (typeof order?.status === "string") {
-      return order.status;
-    }
-
-    return order?.status?.status || "Order Placed";
-  };
-
-  const canCancelOrder = (order) => {
-    const status = getOrderStatus(order).toLowerCase();
-
-    return status === "order placed" || status === "processing";
-  };
-
-  const handleCancelOrder = async (order) => {
-    if (!order?.id || !canCancelOrder(order)) {
-      return;
-    }
-
-    try {
-      const response = await api.patch(
-        `/orders/${order.id}`,
-        {
-          status: "Cancelled",
-        }
-      );
-
-      const updatedOrder = response.data;
-
-      setOrders((currentOrders) =>
-        currentOrders.map((currentOrder) =>
-          String(currentOrder.id) === String(order.id)
-            ? updatedOrder
-            : currentOrder
-        )
-      );
-
-      setSelectedOrder((current) =>
-        current && String(current.id) === String(order.id)
-          ? updatedOrder
-          : current
-      );
-
-      toast.success("Order cancelled successfully");
-    } catch (error) {
-      console.error("Failed to cancel order:", error);
-      toast.error("Failed to cancel order");
-    }
-  };
-
-  // ORDER SUCCESS MESSAGE
 
   useEffect(() => {
     const message =
@@ -128,26 +108,99 @@ function Orders() {
     if (message) {
       setSuccessMessage(message);
 
-      window.history.replaceState(
-        {},
-        document.title
-      );
+      navigate(location.pathname, {
+        replace: true,
+        state: {},
+      });
     }
-  }, [location.state]);
+  }, [
+    location.state,
+    location.pathname,
+    navigate,
+  ]);
 
-  // NOT LOGGED IN
+  const handleCancelOrder = async (
+    order
+  ) => {
+    if (!order?.id) {
+      return;
+    }
+
+    try {
+      setCancellingOrder(true);
+
+      const response =
+        await api.put(
+          `/orders/${order.id}/cancel`
+        );
+
+      const updatedOrder =
+        response?.data?.data;
+
+      if (!updatedOrder) {
+        throw new Error(
+          "Invalid cancellation response"
+        );
+      }
+
+      setOrders(
+        (currentOrders) =>
+          currentOrders.map(
+            (currentOrder) =>
+              String(
+                currentOrder.id
+              ) ===
+              String(order.id)
+                ? updatedOrder
+                : currentOrder
+          )
+      );
+
+      setSelectedOrder(
+        (currentOrder) =>
+          currentOrder &&
+          String(
+            currentOrder.id
+          ) ===
+            String(order.id)
+            ? updatedOrder
+            : currentOrder
+      );
+
+      toast.success(
+        "Order cancelled successfully"
+      );
+    } catch (error) {
+      console.error(
+        "Cancel order error:",
+        error
+      );
+
+      console.error(
+        "Backend response:",
+        error.response?.data
+      );
+
+      toast.error(
+        error.response?.data?.message ||
+          "Unable to cancel order"
+      );
+    } finally {
+      setCancellingOrder(false);
+    }
+  };
 
   if (!user?.id) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#F7F3EE] flex items-center justify-center px-4">
 
-        <div className="bg-white rounded-2xl shadow-md p-8 text-center max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-sm border border-[#E7DED5] p-8 text-center max-w-md w-full">
 
           <h2 className="text-2xl font-bold mb-3">
             Please Login
           </h2>
 
-          <p className="text-gray-500 mb-6">
+          <p className="text-[#7A6A5D] mb-6">
             Login to view your orders.
           </p>
 
@@ -155,23 +208,22 @@ function Orders() {
             onClick={() =>
               navigate("/login")
             }
-            className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800"
+            className="bg-[#5A4030] text-white px-6 py-3 rounded-xl hover:bg-[#4A3326]"
           >
             Login
           </button>
 
         </div>
+
       </div>
     );
   }
 
-  // LOADING
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F3EE] flex items-center justify-center">
 
-        <p className="text-lg text-gray-600">
+        <p className="text-lg text-[#7A6A5D]">
           Loading your orders...
         </p>
 
@@ -179,14 +231,12 @@ function Orders() {
     );
   }
 
-  // ORDERS PAGE
-
   return (
-    <div className="min-h-screen bg-white px-4 md:px-10 py-10">
+    <div className="min-h-screen bg-[#F7F3EE] px-4 md:px-10 py-10">
 
       <div className="max-w-5xl mx-auto">
 
-        {/* TITLE */}
+        {}
 
         <div className="flex items-center justify-between mb-8">
 
@@ -196,26 +246,24 @@ function Orders() {
               My Orders
             </h1>
 
-            <p className="text-gray-500 mt-1">
+            <p className="text-[#7A6A5D] mt-1">
               View your order history
             </p>
 
           </div>
 
-          {/* CONTINUE SHOPPING */}
-
           <button
             onClick={() =>
               navigate("/")
             }
-            className="hidden sm:block border border-black px-5 py-2.5 rounded-xl hover:bg-black hover:text-white transition"
+            className="hidden sm:block border border-[#E7DED5] px-5 py-2.5 rounded-xl hover:bg-[#5A4030] hover:text-white transition"
           >
             Continue Shopping
           </button>
 
         </div>
 
-        {/* ORDER SUCCESS MESSAGE */}
+        {}
 
         {successMessage && (
           <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 flex items-start gap-3">
@@ -241,8 +289,7 @@ function Orders() {
               onClick={() =>
                 setSuccessMessage("")
               }
-              className="text-green-700 hover:text-green-900 text-xl leading-none"
-              aria-label="Close success message"
+              className="text-green-700 hover:text-green-900 text-xl"
             >
               ×
             </button>
@@ -250,11 +297,11 @@ function Orders() {
           </div>
         )}
 
-        {/* NO ORDERS */}
+        {}
 
         {orders.length === 0 ? (
 
-          <div className="bg-white rounded-2xl shadow-md p-10 text-center">
+          <div className="bg-white rounded-2xl shadow-sm border border-[#E7DED5] p-10 text-center">
 
             <div className="text-5xl mb-4">
               🛍️
@@ -264,7 +311,7 @@ function Orders() {
               No Orders Yet
             </h2>
 
-            <p className="text-gray-500 mb-6">
+            <p className="text-[#7A6A5D] mb-6">
               You haven't placed any orders yet.
             </p>
 
@@ -272,7 +319,7 @@ function Orders() {
               onClick={() =>
                 navigate("/")
               }
-              className="bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800"
+              className="bg-[#5A4030] text-white px-6 py-3 rounded-xl hover:bg-[#4A3326]"
             >
               Start Shopping
             </button>
@@ -286,32 +333,28 @@ function Orders() {
             {orders.map((order) => {
 
               const totalAmount =
+                order.totalAmount ??
                 order.totalPrice ??
                 order.total ??
-                order.totalAmount ??
                 0;
 
               const status =
-                typeof order.status ===
-                "string"
-                  ? order.status
-                  : order.status?.status ||
-                    "Order Placed";
+                order.status ||
+                "Order Placed";
 
               return (
-
                 <div
                   key={order.id}
-                  className="bg-white rounded-2xl shadow-md overflow-hidden"
+                  className="bg-white rounded-2xl shadow-sm border border-[#E7DED5] overflow-hidden"
                 >
 
-                  {/* ORDER HEADER */}
+                  {}
 
                   <div className="p-5 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
                     <div>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#7A6A5D]">
                         Order ID
                       </p>
 
@@ -323,7 +366,7 @@ function Orders() {
 
                     <div>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#7A6A5D]">
                         Order Date
                       </p>
 
@@ -346,15 +389,22 @@ function Orders() {
 
                     <div>
 
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-[#7A6A5D]">
                         Total
                       </p>
 
                       <p className="font-bold">
-                        ₹{totalAmount}
+                        ₹
+                        {Number(
+                          totalAmount
+                        ).toLocaleString(
+                          "en-IN"
+                        )}
                       </p>
 
                     </div>
+
+                    {}
 
                     <div>
 
@@ -385,130 +435,179 @@ function Orders() {
 
                   </div>
 
-                  {/* ORDER ITEMS */}
+                  {}
 
                   <div className="p-5">
 
                     <div className="space-y-4">
 
                       {order.items?.map(
-                        (item, index) => {
+                        (
+                          item,
+                          index
+                        ) => {
 
                           const quantity =
                             Number(
-                              item.qty ??
-                                item.quantity ??
+                              item.quantity ??
                                 1
                             );
 
                           const price =
                             Number(
-                              item.price ?? 0
+                              item.price ??
+                                0
+                            );
+
+                          const itemTotal =
+                            Number(
+                              item.totalPrice ??
+                                price *
+                                  quantity
+                            );
+
+                          const imageUrl =
+                            getImageUrl(
+                              item.imageUrl
                             );
 
                           return (
-
                             <div
                               key={
                                 item.id ||
-                                item.productId ||
-                                index
+                                `${item.productId}-${index}`
                               }
                               className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0"
                             >
 
-                              {/* IMAGE */}
+                              {}
 
                               <div className="w-20 h-20 flex-shrink-0">
 
-                                {item.image ? (
+                                {imageUrl ? (
 
                                   <img
                                     src={
-                                      item.image
+                                      imageUrl
                                     }
                                     alt={
-                                      item.name ||
+                                      item.productName ||
                                       "Product"
                                     }
-                                    className="w-full h-full object-cover rounded-xl"
+                                    className="w-full h-full object-cover rounded-xl border border-[#F0E8E1]"
+                                    onError={(
+                                      event
+                                    ) => {
+                                      event.currentTarget.style.display =
+                                        "none";
+
+                                      const fallback =
+                                        event.currentTarget
+                                          .nextElementSibling;
+
+                                      if (
+                                        fallback
+                                      ) {
+                                        fallback.style.display =
+                                          "flex";
+                                      }
+                                    }}
                                   />
 
-                                ) : (
+                                ) : null}
 
-                                  <div className="w-full h-full bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                                    No Image
-                                  </div>
-
-                                )}
+                                <div
+                                  className={`w-full h-full bg-[#F7F3EE] rounded-xl items-center justify-center text-[#9A8A7D] text-sm ${
+                                    imageUrl
+                                      ? "hidden"
+                                      : "flex"
+                                  }`}
+                                >
+                                  No Image
+                                </div>
 
                               </div>
 
-                              {/* PRODUCT DETAILS */}
+                              {}
 
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
 
                                 <h3 className="font-semibold">
-                                  {item.name ||
-                                    item.productName ||
-                                    "Product"}
+                                  {
+                                    item.productName
+                                  }
                                 </h3>
 
-                                {/* SIZE */}
-
-                                {(item.selectedSize ||
-                                  item.size) && (
-                                  <p className="text-sm text-gray-500 mt-1">
-                                    Size:{" "}
-                                    {item.selectedSize ||
-                                      item.size}
+                                {item.ageGroup && (
+                                  <p className="text-sm text-[#7A6A5D] mt-1">
+                                    Age:{" "}
+                                    {
+                                      item.ageGroup
+                                    }
                                   </p>
                                 )}
 
-                                <p className="text-sm text-gray-500">
-                                  Quantity:{" "}
-                                  {quantity}
-                                </p>
+                                {item.size && (
+                                  <p className="text-sm text-[#7A6A5D]">
+                                    Size:{" "}
+                                    {
+                                      item.size
+                                    }
+                                  </p>
+                                )}
 
+                                <p className="text-sm text-[#7A6A5D]">
+                                  Quantity:{" "}
+                                  {
+                                    quantity
+                                  }
+                                </p>
 
                               </div>
 
-                              {/* PRICE */}
+                              {}
 
                               <div className="text-right">
 
                                 <p className="font-semibold">
-                                  ₹{price}
+                                  ₹
+                                  {price.toLocaleString(
+                                    "en-IN"
+                                  )}
                                 </p>
 
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-[#7A6A5D]">
                                   ×{" "}
-                                  {quantity}
+                                  {
+                                    quantity
+                                  }
                                 </p>
 
                                 <p className="font-bold mt-1">
                                   ₹
-                                  {price *
-                                    quantity}
+                                  {itemTotal.toLocaleString(
+                                    "en-IN"
+                                  )}
                                 </p>
 
                               </div>
 
                             </div>
-
                           );
                         }
                       )}
 
                     </div>
 
-                    {/* BOTTOM */}
+                    {}
 
                     <div className="mt-5 pt-4 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 
+                      {}
+
                       <div>
 
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-[#7A6A5D]">
                           Payment
                         </p>
 
@@ -531,18 +630,9 @@ function Orders() {
 
                       </div>
 
-                      <div className="flex flex-col items-start sm:items-end gap-2">
+                      {}
 
-                        {order.deliveredAt && (
-                          <p className="text-xs text-gray-500">
-                            Delivered:{" "}
-                            {new Date(
-                              order.deliveredAt
-                            ).toLocaleDateString(
-                              "en-IN"
-                            )}
-                          </p>
-                        )}
+                      <div className="flex flex-col items-start sm:items-end gap-2">
 
                         <div className="flex flex-col sm:flex-row gap-2">
 
@@ -553,22 +643,32 @@ function Orders() {
                                 order
                               )
                             }
-                            className="border border-black px-5 py-2.5 rounded-xl hover:bg-black hover:text-white transition"
+                            className="border border-[#E7DED5] px-5 py-2.5 rounded-xl hover:bg-[#5A4030] hover:text-white transition"
                           >
                             View Order
                           </button>
 
-                          {canCancelOrder(order) && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setCancelOrderConfirmation(order)
-                              }
-                              className="border border-red-500 text-red-600 px-5 py-2.5 rounded-xl hover:bg-red-500 hover:text-white transition"
-                            >
-                              Cancel Order
-                            </button>
-                          )}
+                          {status !==
+                            "Delivered" &&
+                            status !==
+                              "Cancelled" && (
+
+                              <button
+                                type="button"
+                                disabled={
+                                  cancellingOrder
+                                }
+                                onClick={() =>
+                                  setCancelOrderConfirmation(
+                                    order
+                                  )
+                                }
+                                className="border border-red-500 text-red-600 px-5 py-2.5 rounded-xl hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                              >
+                                Cancel Order
+                              </button>
+
+                            )}
 
                         </div>
 
@@ -579,7 +679,6 @@ function Orders() {
                   </div>
 
                 </div>
-
               );
             })}
 
@@ -589,75 +688,111 @@ function Orders() {
 
       </div>
 
-      {/* CANCEL CONFIRMATION MODAL */}
+      {}
 
       {cancelOrderConfirmation && (
+
         <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
+
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
 
             <div className="flex items-start gap-4">
+
               <div className="w-11 h-11 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xl flex-shrink-0">
                 !
               </div>
 
               <div className="flex-1">
-                <h2 className="text-xl font-bold text-gray-800">
+
+                <h2 className="text-xl font-bold text-[#5A4030]">
                   Confirm Cancellation
                 </h2>
 
-                <p className="text-gray-500 mt-2 leading-relaxed">
-                  Are you sure you want to cancel order #{cancelOrderConfirmation.id}?
-                  This action cannot be undone.
+                <p className="text-[#7A6A5D] mt-2 leading-relaxed">
+                  Are you sure you want to
+                  cancel order #
+                  {
+                    cancelOrderConfirmation.id
+                  }?
                 </p>
+
               </div>
+
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
+
               <button
                 type="button"
-                onClick={() =>
-                  setCancelOrderConfirmation(null)
+                disabled={
+                  cancellingOrder
                 }
-                className="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+                onClick={() =>
+                  setCancelOrderConfirmation(
+                    null
+                  )
+                }
+                className="px-5 py-2.5 rounded-xl border border-[#DCD0C5] text-[#5A4030] hover:bg-[#F7F3EE] transition disabled:opacity-50"
               >
                 No, Keep Order
               </button>
 
               <button
                 type="button"
+                disabled={
+                  cancellingOrder
+                }
                 onClick={async () => {
-                  const order = cancelOrderConfirmation;
-                  setCancelOrderConfirmation(null);
-                  await handleCancelOrder(order);
+
+                  const order =
+                    cancelOrderConfirmation;
+
+                  setCancelOrderConfirmation(
+                    null
+                  );
+
+                  await handleCancelOrder(
+                    order
+                  );
+
                 }}
-                className="px-5 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
+                className="px-5 py-2.5 rounded-xl bg-red-600 text-white hover:bg-red-700 transition disabled:opacity-50"
               >
-                Yes, Cancel Order
+                {cancellingOrder
+                  ? "Cancelling..."
+                  : "Yes, Cancel Order"}
               </button>
+
             </div>
 
           </div>
+
         </div>
+
       )}
 
-      {/* ORDER DETAILS MODAL */}
+      {}
 
       {selectedOrder && (
+
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
 
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
 
-            {/* MODAL HEADER */}
+            {}
 
             <div className="flex items-center justify-between p-5 border-b">
 
               <div>
 
                 <h2 className="text-xl font-bold">
-                  Order #{selectedOrder.id}
+                  Order #
+                  {
+                    selectedOrder.id
+                  }
                 </h2>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-[#7A6A5D] mt-1">
                   Order Details
                 </p>
 
@@ -666,20 +801,22 @@ function Orders() {
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedOrder(null)
+                  setSelectedOrder(
+                    null
+                  )
                 }
-                className="text-gray-500 hover:text-black text-2xl"
+                className="text-[#7A6A5D] hover:text-black text-2xl"
               >
                 ×
               </button>
 
             </div>
 
-            {/* MODAL BODY */}
+            {}
 
             <div className="p-5 space-y-5">
 
-              {/* CUSTOMER DETAILS */}
+              {}
 
               <div className="border rounded-xl p-4">
 
@@ -690,74 +827,82 @@ function Orders() {
                 <div className="space-y-2">
 
                   <div>
-
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[#7A6A5D]">
                       Name
                     </p>
 
                     <p className="font-medium">
-                      {selectedOrder
-                        .customer?.name ||
+                      {selectedOrder.name ||
                         user.name ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   <div>
-
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[#7A6A5D]">
                       Phone
                     </p>
 
                     <p className="font-medium">
-                      {selectedOrder
-                        .customer?.phone ||
+                      {selectedOrder.phone ||
                         user.phone ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   <div>
-
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-[#7A6A5D]">
                       Address
                     </p>
 
                     <p className="font-medium">
-                      {selectedOrder
-                        .customer?.address ||
-                        user.address ||
+                      {selectedOrder.address ||
                         "Not available"}
                     </p>
-
                   </div>
 
                   <div>
+                    <p className="text-sm text-[#7A6A5D]">
+                      Place
+                    </p>
 
-                    <p className="text-sm text-gray-500">
+                    <p className="font-medium">
+                      {selectedOrder.place ||
+                        "Not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-[#7A6A5D]">
+                      State
+                    </p>
+
+                    <p className="font-medium">
+                      {selectedOrder.state ||
+                        "Not available"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-[#7A6A5D]">
                       PIN Code
                     </p>
 
                     <p className="font-medium">
-                      {selectedOrder
-                        .customer?.pincode ||
-                        user.pincode ||
+                      {selectedOrder.pincode ||
                         "Not available"}
                     </p>
-
                   </div>
 
                 </div>
 
               </div>
 
-              {/* ORDER STATUS */}
+              {}
 
               <div className="border rounded-xl p-4">
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#7A6A5D]">
                   Order Status
                 </p>
 
@@ -772,20 +917,22 @@ function Orders() {
                       : selectedOrder.status ===
                         "Shipped"
                       ? "text-blue-600"
+                      : selectedOrder.status ===
+                        "Out for Delivery"
+                      ? "text-indigo-600"
+                      : selectedOrder.status ===
+                        "Processing"
+                      ? "text-yellow-600"
                       : "text-purple-600"
                   }`}
                 >
-                  {typeof selectedOrder.status ===
-                  "string"
-                    ? selectedOrder.status
-                    : selectedOrder.status
-                        ?.status ||
-                      "Order Placed"}
+                  {selectedOrder.status ||
+                    "Order Placed"}
                 </p>
 
               </div>
 
-              {/* PRODUCTS */}
+              {}
 
               <div>
 
@@ -796,76 +943,136 @@ function Orders() {
                 <div className="space-y-3">
 
                   {selectedOrder.items?.map(
-                    (item, index) => {
+                    (
+                      item,
+                      index
+                    ) => {
 
                       const quantity =
                         Number(
-                          item.qty ??
-                            item.quantity ??
+                          item.quantity ??
                             1
                         );
 
                       const price =
                         Number(
-                          item.price ?? 0
+                          item.price ??
+                            0
+                        );
+
+                      const total =
+                        Number(
+                          item.totalPrice ??
+                            price *
+                              quantity
+                        );
+
+                      const imageUrl =
+                        getImageUrl(
+                          item.imageUrl
                         );
 
                       return (
-
                         <div
                           key={
                             item.id ||
-                            item.productId ||
-                            index
+                            `${item.productId}-${index}`
                           }
-                          className="border rounded-xl p-4 flex justify-between gap-4"
+                          className="border rounded-xl p-4 flex gap-4"
                         >
 
-                          <div>
+                          {}
+
+                          <div className="w-20 h-20 flex-shrink-0">
+
+                            {imageUrl ? (
+
+                              <img
+                                src={
+                                  imageUrl
+                                }
+                                alt={
+                                  item.productName ||
+                                  "Product"
+                                }
+                                className="w-full h-full object-cover rounded-xl"
+                              />
+
+                            ) : (
+
+                              <div className="w-full h-full bg-[#F7F3EE] rounded-xl flex items-center justify-center text-[#9A8A7D] text-sm">
+                                No Image
+                              </div>
+
+                            )}
+
+                          </div>
+
+                          {}
+
+                          <div className="flex-1">
 
                             <p className="font-semibold">
-                              {item.name ||
-                                item.productName ||
-                                "Product"}
+                              {
+                                item.productName
+                              }
                             </p>
 
-                            {(item.selectedSize ||
-                              item.size) && (
-                              <p className="text-sm text-gray-500">
-                                Size:{" "}
-                                {item.selectedSize ||
-                                  item.size}
+                            {item.ageGroup && (
+                              <p className="text-sm text-[#7A6A5D] mt-1">
+                                Age:{" "}
+                                {
+                                  item.ageGroup
+                                }
                               </p>
                             )}
 
-                            <p className="text-sm text-gray-500">
+                            {item.size && (
+                              <p className="text-sm text-[#7A6A5D]">
+                                Size:{" "}
+                                {
+                                  item.size
+                                }
+                              </p>
+                            )}
+
+                            <p className="text-sm text-[#7A6A5D]">
                               Quantity:{" "}
-                              {quantity}
+                              {
+                                quantity
+                              }
                             </p>
 
                           </div>
 
+                          {}
+
                           <div className="text-right">
 
                             <p className="font-semibold">
-                              ₹{price}
+                              ₹
+                              {price.toLocaleString(
+                                "en-IN"
+                              )}
                             </p>
 
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-[#7A6A5D]">
                               ×{" "}
-                              {quantity}
+                              {
+                                quantity
+                              }
                             </p>
 
                             <p className="font-bold">
                               ₹
-                              {price *
-                                quantity}
+                              {total.toLocaleString(
+                                "en-IN"
+                              )}
                             </p>
 
                           </div>
 
                         </div>
-
                       );
                     }
                   )}
@@ -874,7 +1081,7 @@ function Orders() {
 
               </div>
 
-              {/* PAYMENT */}
+              {}
 
               <div className="border rounded-xl p-4">
 
@@ -884,7 +1091,7 @@ function Orders() {
 
                 <div className="flex justify-between">
 
-                  <span className="text-gray-500">
+                  <span className="text-[#7A6A5D]">
                     Method
                   </span>
 
@@ -897,7 +1104,7 @@ function Orders() {
 
                 <div className="flex justify-between mt-2">
 
-                  <span className="text-gray-500">
+                  <span className="text-[#7A6A5D]">
                     Status
                   </span>
 
@@ -917,11 +1124,47 @@ function Orders() {
 
               </div>
 
-              {/* TOTAL */}
+              {}
 
-              <div className="bg-white rounded-xl p-4 border">
+              <div className="border rounded-xl p-4 space-y-3">
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between">
+
+                  <span className="text-[#7A6A5D]">
+                    Subtotal
+                  </span>
+
+                  <span>
+                    ₹
+                    {Number(
+                      selectedOrder.subtotal ??
+                        0
+                    ).toLocaleString(
+                      "en-IN"
+                    )}
+                  </span>
+
+                </div>
+
+                <div className="flex justify-between">
+
+                  <span className="text-[#7A6A5D]">
+                    Delivery Fee
+                  </span>
+
+                  <span>
+                    ₹
+                    {Number(
+                      selectedOrder.deliveryFee ??
+                        0
+                    ).toLocaleString(
+                      "en-IN"
+                    )}
+                  </span>
+
+                </div>
+
+                <div className="border-t pt-3 flex justify-between">
 
                   <span className="text-lg font-semibold">
                     Total
@@ -929,21 +1172,24 @@ function Orders() {
 
                   <span className="text-2xl font-bold">
                     ₹
-                    {selectedOrder.totalPrice ??
-                      selectedOrder.total ??
+                    {Number(
                       selectedOrder.totalAmount ??
-                      0}
+                        selectedOrder.totalPrice ??
+                        0
+                    ).toLocaleString(
+                      "en-IN"
+                    )}
                   </span>
 
                 </div>
 
               </div>
 
-              {/* ORDER DATE */}
+              {}
 
               <div>
 
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#7A6A5D]">
                   Order Date
                 </p>
 
@@ -959,13 +1205,56 @@ function Orders() {
 
               </div>
 
+              {}
+
+              {selectedOrder.cancelledAt && (
+                <div>
+
+                  <p className="text-sm text-[#7A6A5D]">
+                    Cancelled Date
+                  </p>
+
+                  <p className="font-medium text-red-600">
+                    {new Date(
+                      selectedOrder.cancelledAt
+                    ).toLocaleString(
+                      "en-IN"
+                    )}
+                  </p>
+
+                </div>
+              )}
+
             </div>
 
           </div>
 
         </div>
+
       )}
 
+      <ToastContainer
+        position="bottom-center"
+        autoClose={1800}
+        hideProgressBar
+        closeButton={false}
+        closeOnClick
+        pauseOnHover={false}
+        draggable={false}
+        theme="light"
+        icon={false}
+        toastStyle={{
+          background: "#FFF5F7",
+          color: "#78394B",
+          border: "1px solid #F0C7D1",
+          borderRadius: "12px",
+          boxShadow: "0 4px 14px rgba(120, 57, 75, 0.10)",
+          fontSize: "13px",
+          fontWeight: "500",
+          minHeight: "42px",
+          padding: "10px 14px",
+        }}
+      />
     </div>
   );
 }

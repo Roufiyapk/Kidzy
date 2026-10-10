@@ -3,6 +3,8 @@ export const categories = [
     name: "Girls",
     subCategories: [
       "Dresses",
+            "co-ord sets",
+
       "Tops",
       "Bottoms",
       "Ethnic Wear",
@@ -16,8 +18,10 @@ export const categories = [
       "T-Shirts",
       "Shirts",
       "Pants",
+      "co-ord sets",
       "Ethnic Wear",
       "Party Wear",
+
     ],
   },
 
@@ -73,11 +77,8 @@ export const categories = [
   },
 
   {
-    name: "Kids Care",
-    subCategories: [
-      "Bath & Body",
-      "Personal Care",
-    ],
+    name: "Kids Care"
+   
   },
 
   {

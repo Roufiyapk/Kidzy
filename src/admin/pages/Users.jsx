@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   useMutation,
   useQuery,
@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { FaSearch } from "react-icons/fa";
+
 import api from "../../api/api";
 
 function Users() {
@@ -14,150 +15,164 @@ function Users() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+
   const [selectedUser, setSelectedUser] = useState(null);
   const [confirmUser, setConfirmUser] = useState(null);
 
   const usersPerPage = 5;
 
-  // FETCH USERS
+  const notify = (type, message) => {
+    toast[type](message, {
+      position: "bottom-center",
+      autoClose: 1800,
+      hideProgressBar: true,
+      closeButton: false,
+      icon: false,
+      style: {
+        background: "#FFF9F3",
+        color: "#5A4030",
+        border: "1px solid #E7DED5",
+        borderRadius: "12px",
+        boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+        fontSize: "14px",
+        fontWeight: 500,
+      },
+    });
+  };
+
   const {
     data: users = [],
     isLoading,
     isError,
+    isFetching,
   } = useQuery({
-    queryKey: ["admin-users"],
-    queryFn: async () => {
-      const response = await api.get("/users");
+    queryKey: [
+      "admin-users",
+      search,
+      statusFilter,
+      page,
+      usersPerPage,
+    ],
 
-      if (!Array.isArray(response.data)) {
+    queryFn: async () => {
+      const params = {
+        page,
+        pageSize: usersPerPage,
+        status: statusFilter,
+      };
+
+      if (search.trim()) {
+        params.search = search.trim();
+      }
+
+      const response = await api.get(
+        "/admin/users",
+        {
+          params,
+        }
+      );
+
+      const data =
+        response.data?.data;
+
+      if (!Array.isArray(data)) {
         return [];
       }
 
-      // Do not show admin users in the customer list.
-      return response.data.filter(
-        (user) =>
-          String(user.role || "").toLowerCase() !== "admin"
-      );
+      return data;
     },
+
+    placeholderData: (previousData) =>
+      previousData,
   });
 
-  // BLOCK / UNBLOCK
   const blockMutation = useMutation({
     mutationFn: async (user) => {
-      const newBlockedValue = !Boolean(user.blocked);
+      const userId =
+        user.id ??
+        user.Id;
 
-      const response = await api.patch(`/users/${user.id}`, {
-        blocked: newBlockedValue,
-      });
+      const isBlocked =
+        Boolean(
+          user.isBlocked ??
+            user.IsBlocked ??
+            false
+        );
 
-      return response.data;
+      if (isBlocked) {
+        await api.put(
+          `/admin/users/${userId}/unblock`
+        );
+      } else {
+        await api.put(
+          `/admin/users/${userId}/block`
+        );
+      }
+
+      return {
+        userId,
+        isBlocked,
+      };
     },
 
-    onSuccess: (updatedUser) => {
-      queryClient.setQueryData(
-        ["admin-users"],
-        (currentUsers = []) =>
-          currentUsers.map((user) =>
-            String(user.id) === String(updatedUser.id)
-              ? {
-                  ...user,
-                  ...updatedUser,
-                }
-              : user
-          )
-      );
+    onSuccess: ({
+      userId,
+      isBlocked,
+    }) => {
+      const newBlockedValue =
+        !isBlocked;
 
-      setSelectedUser((currentUser) => {
-        if (
-          currentUser &&
-          String(currentUser.id) ===
-            String(updatedUser.id)
-        ) {
+      setSelectedUser(
+        (currentUser) => {
+          if (!currentUser) {
+            return currentUser;
+          }
+
+          const currentId =
+            currentUser.id ??
+            currentUser.Id;
+
+          if (
+            String(currentId) !==
+            String(userId)
+          ) {
+            return currentUser;
+          }
+
           return {
             ...currentUser,
-            ...updatedUser,
+            isBlocked:
+              newBlockedValue,
           };
         }
-
-        return currentUser;
-      });
+      );
 
       setConfirmUser(null);
 
-      toast.success(
-        updatedUser.blocked
+      notify("success", 
+        newBlockedValue
           ? "User blocked successfully."
           : "User unblocked successfully."
       );
+      queryClient.invalidateQueries({
+        queryKey: ["admin-users"],
+      });
     },
 
     onError: (error) => {
-      console.error("Block user error:", error);
-      toast.error("Unable to update user status.");
+      console.error(
+        "Block/unblock user error:",
+        error
+      );
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        "Unable to update user status.";
+
+      notify("error", message);
     },
   });
-
-  // SEARCH + FILTER
-  const filteredUsers = useMemo(() => {
-    const searchValue = search.trim().toLowerCase();
-
-    return [...users]
-      .sort((a, b) =>
-        String(a.name || "").localeCompare(
-          String(b.name || "")
-        )
-      )
-      .filter((user) => {
-        const name = String(
-          user.name || ""
-        ).toLowerCase();
-
-        const email = String(
-          user.email || ""
-        ).toLowerCase();
-
-        const phone = String(
-          user.phone || ""
-        ).toLowerCase();
-
-        const matchesSearch =
-          !searchValue ||
-          name.includes(searchValue) ||
-          email.includes(searchValue) ||
-          phone.includes(searchValue);
-
-        const isBlocked = Boolean(user.blocked);
-
-        const matchesStatus =
-          statusFilter === "all"
-            ? true
-            : statusFilter === "blocked"
-            ? isBlocked
-            : !isBlocked;
-
-        return (
-          matchesSearch &&
-          matchesStatus
-        );
-      });
-  }, [users, search, statusFilter]);
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(
-      filteredUsers.length / usersPerPage
-    )
-  );
-
-  const currentPage = Math.min(
-    page,
-    totalPages
-  );
-
-  const currentUsers = filteredUsers.slice(
-    (currentPage - 1) * usersPerPage,
-    currentPage * usersPerPage
-  );
 
   const handleSearch = (e) => {
     setSearch(e.target.value);
@@ -178,72 +193,145 @@ function Users() {
       return;
     }
 
-    blockMutation.mutate(confirmUser);
+    blockMutation.mutate(
+      confirmUser
+    );
+  };
+
+  const hasUsers =
+    users.length > 0;
+
+  const hasNextPage =
+    users.length === usersPerPage;
+
+  const handlePreviousPage = () => {
+    setPage(
+      (previousPage) =>
+        Math.max(
+          1,
+          previousPage - 1
+        )
+    );
+  };
+
+  const handleNextPage = () => {
+    if (!hasNextPage) {
+      return;
+    }
+
+    setPage(
+      (previousPage) =>
+        previousPage + 1
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f6fa] p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+      <div className="min-h-screen bg-[#F1EAE1] p-4 sm:p-6">
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#30251F]">
           Users
         </h1>
 
-        <div className="bg-white rounded-2xl shadow p-8 mt-6 text-center text-gray-500">
+        <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-8 mt-6 text-center text-[#7B6A5D]">
           Loading users...
         </div>
+
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#f5f6fa] p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+      <div className="min-h-screen bg-[#F1EAE1] p-4 sm:p-6">
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#30251F]">
           Users
         </h1>
 
-        <div className="bg-white rounded-2xl shadow p-8 mt-6 text-center text-red-500">
+        <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-8 mt-6 text-center text-[#A33D2D]">
           Failed to load users.
         </div>
+
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] p-3 sm:p-6">
+    <div className="min-h-screen bg-[#F1EAE1] p-3 sm:p-6">
 
-      {/* HEADER */}
+      
+
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#30251F]">
           Users
         </h1>
 
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[#7B6A5D] mt-1">
           Manage registered Kidzy customers
         </p>
+
       </div>
 
-      {/* SEARCH + FILTER */}
-      <div className="bg-white rounded-2xl shadow p-4 mb-6">
+      
+
+      <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-4 mb-6">
+
         <div className="flex flex-col md:flex-row gap-3">
 
+          
+
           <div className="relative flex-1">
-            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+
+            <FaSearch
+              className="
+                absolute
+                left-4
+                top-1/2
+                -translate-y-1/2
+                text-[#9B8B7D]
+              "
+            />
 
             <input
               type="text"
               placeholder="Search by name, email or phone..."
               value={search}
               onChange={handleSearch}
-              className="w-full border border-gray-300 rounded-xl py-3 pl-11 pr-4 outline-none focus:border-gray-500"
+              className="
+                w-full
+                border
+                border-[#E0D5CA]
+                rounded-xl
+                py-3
+                pl-11
+                pr-4
+                outline-none
+                focus:border-[#8B6A52]
+              "
             />
+
           </div>
+
+          
 
           <select
             value={statusFilter}
             onChange={handleStatusFilter}
-            className="border border-gray-300 rounded-xl px-4 py-3 bg-white outline-none w-full md:w-52"
+            className="
+              border
+              border-[#E0D5CA]
+              rounded-xl
+              px-4
+              py-3
+              bg-[#FFF9F3]
+              outline-none
+              w-full
+              md:w-52
+            "
           >
+
             <option value="all">
               All Users
             </option>
@@ -255,60 +343,69 @@ function Users() {
             <option value="blocked">
               Blocked
             </option>
+
           </select>
 
         </div>
+
       </div>
 
-      {/* SUMMARY */}
+      
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
-        <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-sm text-gray-500">
-            Total Users
+        
+
+        <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-5">
+
+          <p className="text-sm text-[#7B6A5D]">
+            Users on Page
           </p>
 
-          <h2 className="text-3xl font-bold text-gray-800 mt-2">
+          <h2 className="text-3xl font-bold text-[#30251F] mt-2">
             {users.length}
           </h2>
+
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-sm text-gray-500">
-            Active Users
+        
+
+        <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-5">
+
+          <p className="text-sm text-[#7B6A5D]">
+            Current Page
           </p>
 
-          <h2 className="text-3xl font-bold text-green-600 mt-2">
-            {
-              users.filter(
-                (user) => !user.blocked
-              ).length
-            }
+          <h2 className="text-3xl font-bold text-[#30251F] mt-2">
+            {page}
           </h2>
+
         </div>
 
-        <div className="bg-white rounded-2xl shadow p-5">
-          <p className="text-sm text-gray-500">
-            Blocked Users
+        
+
+        <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm p-5">
+
+          <p className="text-sm text-[#7B6A5D]">
+            Page Size
           </p>
 
-          <h2 className="text-3xl font-bold text-red-600 mt-2">
-            {
-              users.filter(
-                (user) => Boolean(user.blocked)
-              ).length
-            }
+          <h2 className="text-3xl font-bold text-[#30251F] mt-2">
+            {usersPerPage}
           </h2>
+
         </div>
 
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-2xl shadow overflow-x-auto">
+      
+
+      <div className="bg-[#FFF9F3] rounded-2xl border border-[#E7DDD2] shadow-sm overflow-x-auto">
 
         <table className="w-full min-w-[800px]">
 
-          <thead className="bg-gray-100">
+          <thead className="bg-[#F7F0E8]">
+
             <tr>
 
               <th className="text-left p-4">
@@ -332,274 +429,545 @@ function Users() {
               </th>
 
             </tr>
+
           </thead>
 
           <tbody>
 
-            {currentUsers.length === 0 ? (
+            {users.length === 0 ? (
+
               <tr>
+
                 <td
                   colSpan="5"
-                  className="p-10 text-center text-gray-500"
+                  className="p-10 text-center text-[#7B6A5D]"
                 >
                   No users found.
                 </td>
+
               </tr>
+
             ) : (
-              currentUsers.map((user) => {
+
+              users.map((user) => {
+
+                const userId =
+                  user.id ??
+                  user.Id;
+
+                const name =
+                  user.name ??
+                  user.Name ??
+                  "N/A";
+
+                const email =
+                  user.email ??
+                  user.Email ??
+                  "N/A";
+
+                const phone =
+                  user.phone ??
+                  user.Phone;
 
                 const blocked =
-                  Boolean(user.blocked);
+                  Boolean(
+                    user.isBlocked ??
+                      user.IsBlocked ??
+                      false
+                  );
 
                 return (
+
                   <tr
-                    key={user.id}
-                    className="border-t hover:bg-gray-50"
+                    key={userId}
+                    className="
+                      border-t border-[#E7DDD2]
+                      hover:bg-[#F7F0E8]
+                    "
                   >
 
+                    
+
                     <td className="p-4">
+
                       <div>
-                        <p className="font-medium text-gray-800">
-                          {user.name || "N/A"}
+
+                        <p className="font-medium text-[#30251F]">
+                          {name}
                         </p>
 
-                        <p className="text-xs text-gray-400 mt-1">
-                          User ID: {user.id}
+                        <p className="text-xs text-[#9B8B7D] mt-1">
+                          User ID: {userId}
                         </p>
+
                       </div>
+
                     </td>
 
-                    <td className="p-4 text-gray-600">
-                      {user.email || "N/A"}
+                    
+
+                    <td className="p-4 text-[#5A4030]">
+                      {email}
                     </td>
 
-                    <td className="p-4 text-gray-600">
-                      {user.phone
-                        ? `+91 ${user.phone}`
+                    
+
+                    <td className="p-4 text-[#5A4030]">
+
+                      {phone
+                        ? `+91 ${phone}`
                         : "N/A"}
+
                     </td>
+
+                    
 
                     <td className="p-4">
+
                       {blocked ? (
-                        <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+
+                        <span className="
+                          bg-[#FCE8E4]
+                          text-[#A33D2D]
+                          px-3
+                          py-1
+                          rounded-full
+                          text-sm
+                          font-medium
+                        ">
                           Blocked
                         </span>
+
                       ) : (
-                        <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+
+                        <span className="
+                          bg-[#E7F2E8]
+                          text-[#376B42]
+                          px-3
+                          py-1
+                          rounded-full
+                          text-sm
+                          font-medium
+                        ">
                           Active
                         </span>
+
                       )}
+
                     </td>
+
+                    
 
                     <td className="p-4">
 
                       <div className="flex flex-wrap gap-2">
 
+                        
+
                         <button
                           type="button"
                           onClick={() =>
-                            setSelectedUser(user)
+                            setSelectedUser(
+                              user
+                            )
                           }
-                          className="border border-gray-300 px-3 py-2 rounded-lg hover:bg-gray-50 text-sm"
+                          className="
+                            border
+                            border-[#E0D5CA]
+                            px-3
+                            py-2
+                            rounded-lg
+                            hover:bg-[#F7F0E8]
+                            text-sm
+                          "
                         >
                           View
                         </button>
 
+                        
+
                         <button
                           type="button"
                           onClick={() =>
-                            handleBlockToggle(user)
+                            handleBlockToggle(
+                              user
+                            )
                           }
                           disabled={
                             blockMutation.isPending
                           }
-                          className={`px-4 py-2 rounded-lg text-white text-sm disabled:opacity-50 ${
-                            blocked
-                              ? "bg-green-600 hover:bg-green-700"
-                              : "bg-red-600 hover:bg-red-700"
-                          }`}
+                          className={`
+                            px-4
+                            py-2
+                            rounded-lg
+                            text-[#FFF9F3]
+                            text-sm
+                            disabled:opacity-50
+                            ${
+                              blocked
+                                ? "bg-[#557A55] hover:bg-[#426342]"
+                                : "bg-[#A34B3D] hover:bg-[#873B30]"
+                            }
+                          `}
                         >
+
                           {blocked
                             ? "Unblock"
                             : "Block"}
+
                         </button>
 
                       </div>
+
                     </td>
 
                   </tr>
+
                 );
               })
+
             )}
 
           </tbody>
+
         </table>
+
       </div>
 
-      {/* PAGINATION */}
-      {filteredUsers.length > 0 && (
-        <div className="flex justify-center items-center gap-2 flex-wrap mt-6">
+      
 
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() =>
-              setPage((previous) =>
-                Math.max(1, previous - 1)
-              )
-            }
-            className="border bg-white px-4 py-2 rounded-xl disabled:opacity-50"
-          >
-            Prev
-          </button>
+      {hasUsers && (
 
-          {Array.from(
-            { length: totalPages },
-            (_, index) => index + 1
-          ).map((pageNumber) => (
-            <button
-              type="button"
-              key={pageNumber}
-              onClick={() =>
-                setPage(pageNumber)
-              }
-              className={`border px-4 py-2 rounded-xl ${
-                currentPage === pageNumber
-                  ? "bg-black text-white"
-                  : "bg-white hover:bg-gray-50"
-              }`}
-            >
-              {pageNumber}
-            </button>
-          ))}
+        <div className="
+          flex
+          justify-center
+          items-center
+          gap-2
+          flex-wrap
+          mt-6
+        ">
+
+          
 
           <button
             type="button"
             disabled={
-              currentPage === totalPages
+              page === 1 ||
+              isFetching
             }
-            onClick={() =>
-              setPage((previous) =>
-                Math.min(
-                  totalPages,
-                  previous + 1
-                )
-              )
+            onClick={
+              handlePreviousPage
             }
-            className="border bg-white px-4 py-2 rounded-xl disabled:opacity-50"
+            className="
+              border
+              bg-[#FFF9F3]
+              px-4
+              py-2
+              rounded-xl
+              disabled:opacity-50
+            "
+          >
+            Prev
+          </button>
+
+          
+
+          <span className="
+            border
+            bg-[#5A4030]
+            text-[#FFF9F3]
+            px-4
+            py-2
+            rounded-xl
+          ">
+            Page {page}
+          </span>
+
+          
+
+          <button
+            type="button"
+            disabled={
+              !hasNextPage ||
+              isFetching
+            }
+            onClick={
+              handleNextPage
+            }
+            className="
+              border
+              bg-[#FFF9F3]
+              px-4
+              py-2
+              rounded-xl
+              disabled:opacity-50
+            "
           >
             Next
           </button>
 
         </div>
+
       )}
 
-      {/* VIEW USER MODAL */}
+      
+
+      {isFetching && !isLoading && (
+
+        <div className="
+          text-center
+          text-sm
+          text-[#7B6A5D]
+          mt-3
+        ">
+          Loading...
+        </div>
+
+      )}
+
+      
+
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div className="
+          fixed
+          inset-0
+          bg-[#5A4030]/40
+          flex
+          items-center
+          justify-center
+          z-50
+          p-4
+        ">
 
-            <div className="flex items-center justify-between mb-6">
+          <div className="
+            bg-[#FFF9F3]
+            w-full
+            max-w-lg
+            rounded-2xl
+            shadow-xl
+            p-6
+            max-h-[90vh]
+            overflow-y-auto
+          ">
 
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+            
+
+            <div className="
+              flex
+              items-center
+              justify-between
+              mb-6
+            ">
+
+              <h2 className="
+                text-xl
+                sm:text-2xl
+                font-bold
+                text-[#30251F]
+              ">
                 User Details
               </h2>
 
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedUser(null)
+                  setSelectedUser(
+                    null
+                  )
                 }
-                className="text-xl text-gray-500 hover:text-black"
+                className="
+                  text-xl
+                  text-[#7B6A5D]
+                  hover:text-[#30251F]
+                "
               >
                 ✕
               </button>
 
             </div>
 
+            
+
             <div className="space-y-4">
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
                   Name
                 </p>
 
                 <p className="font-medium mt-1">
-                  {selectedUser.name || "N/A"}
+                  {selectedUser.name ??
+                    selectedUser.Name ??
+                    "N/A"}
                 </p>
+
               </div>
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
                   Email
                 </p>
 
-                <p className="font-medium mt-1 break-all">
-                  {selectedUser.email || "N/A"}
+                <p className="
+                  font-medium
+                  mt-1
+                  break-all
+                ">
+                  {selectedUser.email ??
+                    selectedUser.Email ??
+                    "N/A"}
                 </p>
+
               </div>
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
                   Phone
                 </p>
 
                 <p className="font-medium mt-1">
-                  {selectedUser.phone
-                    ? `+91 ${selectedUser.phone}`
+
+                  {(selectedUser.phone ??
+                    selectedUser.Phone)
+                    ? `+91 ${
+                        selectedUser.phone ??
+                        selectedUser.Phone
+                      }`
                     : "N/A"}
+
                 </p>
+
               </div>
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
                   Address
                 </p>
 
                 <p className="font-medium mt-1">
-                  {selectedUser.address || "N/A"}
+                  {selectedUser.address ??
+                    selectedUser.Address ??
+                    "N/A"}
                 </p>
+
               </div>
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
                   PIN Code
                 </p>
 
                 <p className="font-medium mt-1">
-                  {selectedUser.pincode || "N/A"}
+                  {selectedUser.pincode ??
+                    selectedUser.Pincode ??
+                    "N/A"}
                 </p>
+
               </div>
 
+              
+
               <div>
-                <p className="text-xs text-gray-500">
+
+                <p className="text-xs text-[#7B6A5D]">
+                  Role
+                </p>
+
+                <p className="font-medium mt-1">
+                  {selectedUser.role ??
+                    selectedUser.Role ??
+                    "N/A"}
+                </p>
+
+              </div>
+
+              
+
+              <div>
+
+                <p className="text-xs text-[#7B6A5D]">
                   Status
                 </p>
 
                 <div className="mt-2">
-                  {selectedUser.blocked ? (
-                    <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm">
+
+                  {Boolean(
+                    selectedUser.isBlocked ??
+                      selectedUser.IsBlocked ??
+                      false
+                  ) ? (
+
+                    <span className="
+                      bg-[#FCE8E4]
+                      text-[#A33D2D]
+                      px-3
+                      py-1
+                      rounded-full
+                      text-sm
+                    ">
                       Blocked
                     </span>
+
                   ) : (
-                    <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+
+                    <span className="
+                      bg-[#E7F2E8]
+                      text-[#376B42]
+                      px-3
+                      py-1
+                      rounded-full
+                      text-sm
+                    ">
                       Active
                     </span>
+
                   )}
+
                 </div>
+
               </div>
 
             </div>
 
-            <div className="flex justify-end mt-6">
+            
+
+            <div className="
+              flex
+              justify-end
+              mt-6
+            ">
 
               <button
                 type="button"
                 onClick={() =>
-                  setSelectedUser(null)
+                  setSelectedUser(
+                    null
+                  )
                 }
-                className="border border-gray-300 px-5 py-2 rounded-xl hover:bg-gray-50"
+                className="
+                  border
+                  border-[#E0D5CA]
+                  px-5
+                  py-2
+                  rounded-xl
+                  hover:bg-[#F7F0E8]
+                "
               >
                 Close
               </button>
@@ -607,59 +975,156 @@ function Users() {
             </div>
 
           </div>
+
         </div>
+
       )}
 
-      {/* BLOCK CONFIRM MODAL */}
+      
+
       {confirmUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl p-6 text-center">
+        <div className="
+          fixed
+          inset-0
+          bg-[#5A4030]/40
+          flex
+          items-center
+          justify-center
+          z-50
+          p-4
+        ">
 
-            <h2 className="text-xl font-bold text-gray-800">
-              {confirmUser.blocked
+          <div className="
+            bg-[#FFF9F3]
+            w-full
+            max-w-sm
+            rounded-2xl
+            shadow-xl
+            p-6
+            text-center
+          ">
+
+            
+
+            <h2 className="
+              text-xl
+              font-bold
+              text-[#30251F]
+            ">
+
+              {Boolean(
+                confirmUser.isBlocked ??
+                  confirmUser.IsBlocked ??
+                  false
+              )
                 ? "Unblock User?"
                 : "Block User?"}
+
             </h2>
 
-            <p className="text-sm text-gray-500 mt-2">
-              {confirmUser.blocked
-                ? `Allow ${confirmUser.name || "this user"} to use the account again?`
-                : `Prevent ${confirmUser.name || "this user"} from using the account?`}
+            
+
+            <p className="
+              text-sm
+              text-[#7B6A5D]
+              mt-2
+            ">
+
+              {Boolean(
+                confirmUser.isBlocked ??
+                  confirmUser.IsBlocked ??
+                  false
+              )
+                ? `Allow ${
+                    confirmUser.name ??
+                    confirmUser.Name ??
+                    "this user"
+                  } to use the account again?`
+                : `Prevent ${
+                    confirmUser.name ??
+                    confirmUser.Name ??
+                    "this user"
+                  } from using the account?`}
+
             </p>
 
-            <div className="flex justify-center gap-3 mt-6">
+            
+
+            <div className="
+              flex
+              justify-center
+              gap-3
+              mt-6
+            ">
+
+              
 
               <button
                 type="button"
                 onClick={() =>
-                  setConfirmUser(null)
+                  setConfirmUser(
+                    null
+                  )
                 }
-                className="border border-gray-300 px-5 py-2 rounded-xl hover:bg-gray-50"
+                className="
+                  border
+                  border-[#E0D5CA]
+                  px-5
+                  py-2
+                  rounded-xl
+                  hover:bg-[#F7F0E8]
+                "
               >
                 Cancel
               </button>
 
+              
+
               <button
                 type="button"
-                onClick={confirmBlockToggle}
-                disabled={blockMutation.isPending}
-                className={`px-5 py-2 rounded-xl text-white disabled:opacity-50 ${
-                  confirmUser.blocked
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
+                onClick={
+                  confirmBlockToggle
+                }
+                disabled={
+                  blockMutation.isPending
+                }
+                className={`
+                  px-5
+                  py-2
+                  rounded-xl
+                  text-[#FFF9F3]
+                  disabled:opacity-50
+                  ${
+                    Boolean(
+                      confirmUser.isBlocked ??
+                        confirmUser.IsBlocked ??
+                        false
+                    )
+                      ? "bg-[#557A55] hover:bg-[#426342]"
+                      : "bg-[#A34B3D] hover:bg-[#873B30]"
+                  }
+                `}
               >
+
                 {blockMutation.isPending
                   ? "Please wait..."
-                  : confirmUser.blocked
+                  : Boolean(
+                      confirmUser.isBlocked ??
+                        confirmUser.IsBlocked ??
+                        false
+                    )
                   ? "Unblock"
                   : "Block"}
+
               </button>
 
             </div>
+
           </div>
+
         </div>
+
       )}
 
     </div>

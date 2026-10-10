@@ -2,7 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../redux/cartSlice";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import api from "../api/api";
 
 function ProductDetails() {
@@ -18,15 +19,12 @@ function ProductDetails() {
   const [loading, setLoading] = useState(true);
 
   const [selectedSize, setSelectedSize] = useState("");
-  const [selectedAge, setSelectedAge] = useState("");
   const [selectedImage, setSelectedImage] = useState("");
 
-  // IMAGE ZOOM
 
   const [isZoomOpen, setIsZoomOpen] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
 
-  // REVIEWS
 
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
@@ -34,11 +32,16 @@ function ProductDetails() {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewLoading, setReviewLoading] = useState(false);
 
-  const user = JSON.parse(
-    localStorage.getItem("user") || "null"
-  );
+  const getStoredUser = () => {
+    try {
+      return JSON.parse(localStorage.getItem("user") || "null");
+    } catch {
+      return null;
+    }
+  };
 
-  // FETCH PRODUCT
+  const user = getStoredUser();
+
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -47,17 +50,121 @@ function ProductDetails() {
           `/products/${id}`
         );
 
-        const data = response.data;
+        const responseData = response.data;
+        const data = responseData?.data ?? responseData;
 
-        setProduct(data);
+        const variants = Array.isArray(data?.variants)
+          ? data.variants
+          : [];
 
-        const firstImage =
-          data.image ||
-          (Array.isArray(data.images) && data.images.length > 0
-            ? data.images[0]
-            : "");
+        const normalizedSizes = variants.flatMap((variant) => {
+          const nestedSizes = Array.isArray(variant?.sizes)
+            ? variant.sizes
+            : Array.isArray(variant?.Sizes)
+            ? variant.Sizes
+            : null;
 
-        setSelectedImage(firstImage);
+          const sizeItems = nestedSizes ?? [variant];
+
+          return sizeItems.map((sizeItem) => ({
+            id:
+              sizeItem?.id ??
+              sizeItem?.Id ??
+              variant?.id ??
+              variant?.Id ??
+              null,
+            productVariantId:
+              sizeItem?.productVariantId ??
+              sizeItem?.ProductVariantId ??
+              sizeItem?.id ??
+              sizeItem?.Id ??
+              variant?.id ??
+              variant?.Id ??
+              null,
+            size:
+              sizeItem?.size ??
+              sizeItem?.Size ??
+              sizeItem?.name ??
+              sizeItem?.Name ??
+              "",
+            stock: Number(
+              sizeItem?.stock ??
+              sizeItem?.Stock ??
+              variant?.stock ??
+              variant?.Stock ??
+              0
+            ),
+          }));
+        }).filter((item) => item.size);
+
+        const ageGroups = [...new Set(
+          variants
+            .map((variant) => variant?.ageGroup ?? variant?.AgeGroup ?? "")
+            .filter(Boolean)
+        )];
+
+      
+        const backendImages = Array.isArray(data?.images)
+          ? data.images
+          : Array.isArray(data?.Images)
+          ? data.Images
+          : [];
+
+        const getImageUrl = (image) => {
+          if (typeof image === "string") return image;
+          return image?.imageUrl ?? image?.ImageUrl ?? image?.url ?? image?.Url ?? "";
+        };
+
+        const primaryImage = getImageUrl(
+          data?.imageUrl ??
+          data?.ImageUrl ??
+          data?.image ??
+          data?.Image ??
+          backendImages[0] ??
+          ""
+        );
+
+        const allImages = [
+          primaryImage,
+          ...backendImages.map(getImageUrl),
+        ].filter(
+          (image, index, array) =>
+            image && array.indexOf(image) === index
+        );
+
+        const normalizedProduct = {
+          ...data,
+          image: primaryImage,
+          images: allImages,
+          category:
+            data?.categoryName ??
+            data?.CategoryName ??
+            data?.category?.name ??
+            data?.Category?.Name ??
+            data?.category ??
+            "",
+          subCategory:
+            data?.subCategoryName ??
+            data?.SubCategoryName ??
+            data?.subCategory?.name ??
+            data?.SubCategory?.Name ??
+            data?.subCategory ??
+            "",
+          id: data?.id ?? data?.Id,
+          name: data?.name ?? data?.Name ?? "Product",
+          description: data?.description ?? data?.Description ?? "",
+          price: Number(data?.price ?? data?.Price ?? 0),
+          stock: Number(data?.stock ?? data?.Stock ?? 0),
+          gender: data?.gender ?? data?.Gender ?? null,
+          age: data?.age ?? data?.Age ?? ageGroups,
+          variants,
+          sizes: normalizedSizes,
+        };
+
+        setProduct(normalizedProduct);
+        setSelectedSize("");
+
+        setSelectedImage(allImages[0] ?? "");
 
         setLoading(false);
       } catch (error) {
@@ -73,40 +180,27 @@ function ProductDetails() {
     fetchProduct();
   }, [id]);
 
-  // CHECK WHETHER PRODUCT HAS SIZES
 
   const hasSizes =
     Array.isArray(product?.sizes) &&
     product.sizes.length > 0;
 
-  // AGE OPTIONS
-
-  const ageOptions = Array.isArray(product?.age)
-    ? product.age.filter(Boolean)
-    : product?.age
-      ? [product.age]
-      : [];
-
-  const hasMultipleAges = ageOptions.length > 1;
-
-  // PRODUCT IMAGES
 
   const productImages = [
     ...(product?.image ? [product.image] : []),
     ...(Array.isArray(product?.images) ? product.images : []),
+    ...(Array.isArray(product?.Images) ? product.Images : []),
   ].filter(
     (image, index, array) =>
       image && array.indexOf(image) === index
   );
 
-  // CURRENT SELECTED SIZE DATA
 
   const selectedSizeData =
     product?.sizes?.find(
       (size) => size.size === selectedSize
     );
 
-  // CURRENT STOCK
 
   const currentStock = hasSizes
     ? Number(
@@ -116,14 +210,11 @@ function ProductDetails() {
         product?.stock ?? 0
       );
 
-  // OUT OF STOCK
 
   const outOfStock = hasSizes
-    ? selectedSize &&
-      currentStock <= 0
+    ? Boolean(selectedSize) && currentStock <= 0
     : currentStock <= 0;
 
-  // IMAGE ZOOM HELPERS
 
   const openZoom = () => {
     setZoomScale(1);
@@ -169,29 +260,11 @@ function ProductDetails() {
     };
   }, [isZoomOpen]);
 
-  // SELECT AGE
-
-  const handleAgeSelect = (age) => {
-    setSelectedAge(age);
-  };
-
-  // SELECT SIZE
 
   const handleSizeSelect = (size) => {
-    if (!size) return;
     setSelectedSize(size);
   };
 
-  // Automatically select the only age category.
-  useEffect(() => {
-    if (ageOptions.length === 1) {
-      setSelectedAge(ageOptions[0]);
-    } else {
-      setSelectedAge("");
-    }
-  }, [product?.age]);
-
-  // ADD TO CART
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -218,13 +291,6 @@ function ProductDetails() {
       return;
     }
 
-    // AGE CHECK
-
-    if (hasMultipleAges && !selectedAge) {
-      toast.error("Please select age");
-      return;
-    }
-
     // STOCK CHECK
 
     if (currentStock <= 0) {
@@ -239,18 +305,7 @@ function ProductDetails() {
         String(
           item.productId || item.id
         ) === String(product.id) &&
-        String(
-          item.selectedSize || ""
-        ) ===
-          String(
-            selectedSize || ""
-          ) &&
-        String(
-          item.selectedAge || ""
-        ) ===
-          String(
-            selectedAge || ""
-          )
+        String(item.selectedSize || "") === String(selectedSize || "")
     );
 
     if (exists) {
@@ -264,8 +319,10 @@ function ProductDetails() {
       ...product,
       selectedSize:
         selectedSize || null,
-      selectedAge:
-        selectedAge || (ageOptions.length === 1 ? ageOptions[0] : null),
+      productVariantId:
+        selectedSizeData?.productVariantId ??
+        selectedSizeData?.id ??
+        null,
       qty: 1,
       productId: product.id,
       userId: user.id,
@@ -277,7 +334,8 @@ function ProductDetails() {
         cartItem
       );
 
-      const data = response.data;
+      const responseData = response.data;
+      const data = responseData?.data ?? responseData;
 
       dispatch(
         addToCart(data)
@@ -298,7 +356,6 @@ function ProductDetails() {
     }
   };
 
-  // BUY NOW
 
   const handleBuyNow = () => {
     if (!product) return;
@@ -325,13 +382,6 @@ function ProductDetails() {
       return;
     }
 
-    // AGE CHECK
-
-    if (hasMultipleAges && !selectedAge) {
-      toast.error("Please select age");
-      return;
-    }
-
     // STOCK CHECK
 
     if (currentStock <= 0) {
@@ -351,8 +401,10 @@ function ProductDetails() {
       ...product,
       selectedSize:
         selectedSize || null,
-      selectedAge:
-        selectedAge || (ageOptions.length === 1 ? ageOptions[0] : null),
+      productVariantId:
+        selectedSizeData?.productVariantId ??
+        selectedSizeData?.id ??
+        null,
       qty: 1,
       productId: product.id,
       userId: user.id,
@@ -376,71 +428,69 @@ function ProductDetails() {
     navigate("/checkout");
   };
 
-  // FETCH ALL REVIEWS FOR THIS PRODUCT
 
   const loadReviews = async () => {
     try {
-      // Get all reviews
       const response = await api.get(
-        "/reviews"
+        `/reviews/product/${id}`
       );
 
-      const allReviews =
-        Array.isArray(response.data)
-          ? response.data
+      const responseData = response.data;
+
+      const productReviews =
+        Array.isArray(responseData?.data)
+          ? responseData.data
+          : Array.isArray(responseData)
+          ? responseData
           : [];
 
-      // Only this product
-      const productReviews =
-        allReviews
-          .filter(
-            (review) =>
-              String(
-                review.productId
-              ) === String(id)
-          )
-          .sort(
-            (a, b) =>
-              new Date(
-                b.createdAt
-              ) -
-              new Date(
-                a.createdAt
-              )
-          );
+      const sortedReviews =
+        [...productReviews].sort(
+          (a, b) =>
+            new Date(
+              b.createdAt
+            ) -
+            new Date(
+              a.createdAt
+            )
+        );
 
       setReviews(
-        productReviews
+        sortedReviews
       );
     } catch (error) {
       console.error(
         "Review fetch error:",
         error
       );
+
+      setReviews([]);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        "Failed to retrieve reviews.";
+
+      console.error(
+        "Backend review error:",
+        message
+      );
     }
   };
 
   useEffect(() => {
-    loadReviews();
+    if (id) {
+      loadReviews();
+    }
   }, [id]);
 
-  // SUBMIT REVIEW
 
   const handleSubmitReview = async () => {
-    const currentUser =
-      JSON.parse(
-        localStorage.getItem(
-          "user"
-        ) || "null"
-      );
+    const currentUser = getStoredUser();
 
     // LOGIN CHECK
 
     if (!currentUser) {
-      toast.error(
-        "Please login first"
-      );
-
       navigate("/login");
       return;
     }
@@ -495,25 +545,18 @@ function ProductDetails() {
       return;
     }
 
-    // REVIEW DATA
 
     const reviewData = {
-      productId: product.id,
-      userId: currentUser.id,
-      userName:
-        currentUser.name ||
-        "Customer",
-      rating,
+      productId: Number(
+        product.id
+      ),
+      rating: Number(
+        rating
+      ),
       title:
         reviewTitle.trim(),
       comment:
         reviewComment.trim(),
-      productName:
-        product.name,
-      productImage:
-        product.image,
-      createdAt:
-        new Date().toISOString(),
     };
 
     try {
@@ -539,15 +582,30 @@ function ProductDetails() {
         error
       );
 
+      if (
+        error?.response?.status === 401
+      ) {
+        toast.error(
+          "Please login first"
+        );
+
+        navigate("/login");
+        return;
+      }
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        "Failed to add review.";
+
       toast.error(
-        "Failed to add review"
+        message
       );
     } finally {
       setReviewLoading(false);
     }
   };
 
-  // REVIEW SUMMARY
 
   const averageRating =
     reviews.length > 0
@@ -561,7 +619,6 @@ function ProductDetails() {
         ) / reviews.length
       : 0;
 
-  // LOADING
 
   if (loading) {
     return (
@@ -573,7 +630,6 @@ function ProductDetails() {
     );
   }
 
-  // PRODUCT NOT FOUND
 
   if (!product) {
     return (
@@ -585,24 +641,19 @@ function ProductDetails() {
     );
   }
 
-  // UI
 
   return (
     <div className="px-4 md:px-10 py-10 bg-white min-h-screen">
 
-      {/*
-          PRODUCT SECTION
-       */}
+      {}
 
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 bg-white p-5 md:p-7 rounded-2xl shadow-md">
 
-        {/*
-            IMAGE SECTION
-        */}
+        {}
 
         <div>
 
-          {/* MAIN IMAGE */}
+          {}
 
           <div
             className="
@@ -666,7 +717,7 @@ function ProductDetails() {
 
           </div>
 
-          {/* THUMBNAILS */}
+          {}
 
           {productImages.length > 1 && (
             <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
@@ -689,7 +740,7 @@ function ProductDetails() {
                       ${
                         selectedImage ===
                         image
-                          ? "border-orange-500"
+                          ? "border-[#5A4030]"
                           : "border-transparent"
                       }
                     `}
@@ -708,19 +759,17 @@ function ProductDetails() {
 
         </div>
 
-        {/* 
-            PRODUCT DETAILS
-         */}
+        {}
 
         <div className="pt-2">
 
-          {/* PRODUCT NAME */}
+          {}
 
           <h1 className="text-2xl font-bold">
             {product.name}
           </h1>
 
-          {/* CATEGORY */}
+          {}
 
           {product.category && (
             <p className="text-gray-500 mt-2">
@@ -729,7 +778,7 @@ function ProductDetails() {
             </p>
           )}
 
-          {/* SUBCATEGORY */}
+          {}
 
           {product.subCategory && (
             <p className="text-gray-500 mt-1">
@@ -738,7 +787,7 @@ function ProductDetails() {
             </p>
           )}
 
-          {/* GENDER */}
+          {}
 
           {product.gender && (
             <p className="text-gray-500 mt-1">
@@ -747,65 +796,24 @@ function ProductDetails() {
             </p>
           )}
 
-          {/* AGE */}
+          {}
 
-          {ageOptions.length === 1 && (
+          {product.age && (
             <p className="text-gray-500 mt-1">
-              Age:{" "}{ageOptions[0]}
+              Age:{" "}
+              {Array.isArray(product.age)
+                ? product.age.join(" • " )
+                : product.age}
             </p>
           )}
 
-          {hasMultipleAges && (
-            <div className="mt-6">
-
-              <h3 className="text-xl font-semibold mb-4">
-                Select Age Category
-              </h3>
-
-              <div className="flex flex-wrap gap-3">
-                {ageOptions.map((age) => (
-                  <button
-                    type="button"
-                    key={age}
-                    onClick={() => handleAgeSelect(age)}
-                    className={`
-                      px-5
-                      py-3
-                      rounded-xl
-                      border
-                      text-sm
-                      font-medium
-                      transition
-                      ${
-                        selectedAge === age
-                          ? "border-orange-500 text-orange-500 bg-orange-50"
-                          : "border-gray-400 text-gray-700 bg-white hover:border-orange-400"
-                      }
-                    `}
-                  >
-                    {age}
-                  </button>
-                ))}
-              </div>
-
-              {!selectedAge && (
-                <p className="text-sm text-gray-500 mt-2">
-                  Please select an age category.
-                </p>
-              )}
-
-            </div>
-          )}
-
-          {/* PRICE */}
+          {}
 
           <p className="text-3xl font-bold mt-5">
             ₹{product.price}
           </p>
 
-          {/* =================================
-              STOCK
-          ================================= */}
+          {}
 
           <div className="mt-4">
 
@@ -815,29 +823,29 @@ function ProductDetails() {
                   Select a size to check stock
                 </p>
               ) : currentStock <= 0 ? (
-                <p className="text-red-500 font-semibold">
+                <p className="text-[#6B4F3A] font-semibold">
                   Out of Stock
                 </p>
               ) : currentStock <= 3 ? (
-                <p className="text-orange-500 font-semibold">
+                <p className="text-[#5A4030] font-semibold">
                   Only {currentStock} left in stock
                 </p>
               ) : (
-                <p className="text-green-600 font-semibold">
+                <p className="text-[#5A4030] font-semibold">
                   In Stock:{" "}
                   {currentStock}
                 </p>
               )
             ) : currentStock <= 0 ? (
-              <p className="text-red-500 font-semibold">
+              <p className="text-[#6B4F3A] font-semibold">
                 Out of Stock
               </p>
             ) : currentStock <= 3 ? (
-              <p className="text-orange-500 font-semibold">
+              <p className="text-[#5A4030] font-semibold">
                 Only {currentStock} left in stock
               </p>
             ) : (
-              <p className="text-green-600 font-semibold">
+              <p className="text-[#5A4030] font-semibold">
                 In Stock:{" "}
                 {currentStock}
               </p>
@@ -845,9 +853,7 @@ function ProductDetails() {
 
           </div>
 
-          {/* 
-              PRODUCT DESCRIPTION
-           */}
+          {}
 
           <div className="mt-8 pt-6 border-t border-gray-200">
 
@@ -862,9 +868,7 @@ function ProductDetails() {
 
           </div>
 
-          {/*
-              SIZE
-          */}
+          {}
 
           {hasSizes && (
             <div className="mt-8">
@@ -914,8 +918,8 @@ function ProductDetails() {
                               ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
                               : selectedSize ===
                                 sizeObj.size
-                              ? "border-orange-500 text-orange-500 bg-orange-50"
-                              : "border-gray-400 text-gray-700 bg-white hover:border-orange-400"
+                              ? "border-[#5A4030] text-[#5A4030] bg-[#F7F3EE]"
+                              : "border-[#E7DED5] text-[#5A4030] bg-white hover:border-[#6B4F3A]"
                           }
                         `}
                       >
@@ -930,10 +934,10 @@ function ProductDetails() {
                             mt-1
                             ${
                               sizeOutOfStock
-                                ? "text-red-400"
+                                ? "text-[#6B4F3A]"
                                 : sizeStock <= 3
-                                ? "text-orange-500"
-                                : "text-green-600"
+                                ? "text-[#5A4030]"
+                                : "text-[#5A4030]"
                             }
                           `}
                         >
@@ -952,9 +956,7 @@ function ProductDetails() {
             </div>
           )}
 
-          {/* 
-              STOCK BASED PRODUCT
-           */}
+          {}
 
           {!hasSizes && (
             <div
@@ -965,10 +967,10 @@ function ProductDetails() {
                 border
                 ${
                   currentStock <= 0
-                    ? "bg-red-50 border-red-200"
+                    ? "bg-[#F7F3EE] border-[#E7DED5]"
                     : currentStock <= 3
-                    ? "bg-orange-50 border-orange-200"
-                    : "bg-green-50 border-green-200"
+                    ? "bg-[#F7F3EE] border-orange-200"
+                    : "bg-[#F7F3EE] border-[#E7DED5]"
                 }
               `}
             >
@@ -984,10 +986,10 @@ function ProductDetails() {
                     font-bold
                     ${
                       currentStock <= 0
-                        ? "text-red-500"
+                        ? "text-[#6B4F3A]"
                         : currentStock <= 3
-                        ? "text-orange-500"
-                        : "text-green-600"
+                        ? "text-[#5A4030]"
+                        : "text-[#5A4030]"
                     }
                   `}
                 >
@@ -1001,9 +1003,7 @@ function ProductDetails() {
             </div>
           )}
 
-          {/* 
-              SELECTED SIZE STOCK
-          */}
+          {}
 
           {hasSizes &&
             selectedSize && (
@@ -1015,10 +1015,10 @@ function ProductDetails() {
                   border
                   ${
                     currentStock <= 0
-                      ? "bg-red-50 border-red-200"
+                      ? "bg-[#F7F3EE] border-[#E7DED5]"
                       : currentStock <= 3
-                      ? "bg-orange-50 border-orange-200"
-                      : "bg-green-50 border-green-200"
+                      ? "bg-[#F7F3EE] border-orange-200"
+                      : "bg-[#F7F3EE] border-[#E7DED5]"
                   }
                 `}
               >
@@ -1035,20 +1035,6 @@ function ProductDetails() {
 
                 </div>
 
-                {hasMultipleAges && selectedAge && (
-                  <div className="flex justify-between items-center mt-1">
-
-                    <span className="font-medium">
-                      Selected Age
-                    </span>
-
-                    <span className="font-semibold">
-                      {selectedAge}
-                    </span>
-
-                  </div>
-                )}
-
                 <div className="flex justify-between items-center mt-1">
 
                   <span className="font-medium">
@@ -1060,10 +1046,10 @@ function ProductDetails() {
                       font-bold
                       ${
                         currentStock <= 0
-                          ? "text-red-500"
+                          ? "text-[#6B4F3A]"
                           : currentStock <= 3
-                          ? "text-orange-500"
-                          : "text-green-600"
+                          ? "text-[#5A4030]"
+                          : "text-[#5A4030]"
                       }
                     `}
                   >
@@ -1077,13 +1063,11 @@ function ProductDetails() {
               </div>
             )}
 
-          {/* 
-              BUTTONS
-          */}
+          {}
 
           <div className="flex gap-3 mt-7">
 
-            {/* BUY NOW */}
+            {}
 
             <button
               type="button"
@@ -1104,14 +1088,14 @@ function ProductDetails() {
                 ${
                   outOfStock
                     ? "border-gray-300 text-gray-400 bg-white cursor-not-allowed"
-                    : "border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+                    : "border-[#E7DED5] bg-white text-[#5A4030] hover:bg-[#F7F3EE]"
                 }
               `}
             >
               Buy Now
             </button>
 
-            {/* ADD TO BAG */}
+            {}
 
             <button
               type="button"
@@ -1131,7 +1115,7 @@ function ProductDetails() {
                 ${
                   outOfStock
                     ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-[#ff6b00] text-white hover:bg-[#e85f00]"
+                    : "bg-[#5A4030] text-white hover:bg-[#4A3326]"
                 }
               `}
             >
@@ -1146,9 +1130,7 @@ function ProductDetails() {
 
       </div>
 
-      {/* 
-          IMAGE ZOOM MODAL
-       */}
+      {}
 
       {isZoomOpen && (
         <div
@@ -1156,7 +1138,7 @@ function ProductDetails() {
             fixed
             inset-0
             z-[100]
-            bg-black/80
+            bg-[#5A4030]/80
             flex
             items-center
             justify-center
@@ -1165,7 +1147,7 @@ function ProductDetails() {
           onClick={closeZoom}
         >
 
-          {/* CLOSE */}
+          {}
 
           <button
             type="button"
@@ -1194,7 +1176,7 @@ function ProductDetails() {
             ×
           </button>
 
-          {/* ZOOM CONTROLS */}
+          {}
 
           <div
             className="
@@ -1268,7 +1250,7 @@ function ProductDetails() {
 
           </div>
 
-          {/* IMAGE */}
+          {}
 
           <div
             className="
@@ -1310,15 +1292,11 @@ function ProductDetails() {
         </div>
       )}
 
-      {/* 
-          REVIEWS
-      */}
+      {}
 
       <section className="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-md p-5 md:p-7">
 
-        {/* 
-            REVIEW HEADER
-         */}
+        {}
 
         <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-5">
 
@@ -1346,7 +1324,7 @@ function ProductDetails() {
 
               <div>
 
-                <div className="text-yellow-400 text-base tracking-wide">
+                <div className="text-[#6B4F3A] text-base tracking-wide">
 
                   {"★".repeat(
                     Math.round(
@@ -1376,13 +1354,11 @@ function ProductDetails() {
 
         </div>
 
-        {/* 
-            RATING SUMMARY + WRITE REVIEW
-        */}
+        {}
 
         <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-5 mt-6">
 
-          {/* SUMMARY */}
+          {}
 
           <div className="bg-gray-50 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
 
@@ -1398,7 +1374,7 @@ function ProductDetails() {
                 : "0.0"}
             </p>
 
-            <div className="text-yellow-400 text-lg mt-1 tracking-wide">
+            <div className="text-[#6B4F3A] text-lg mt-1 tracking-wide">
               ★★★★★
             </div>
 
@@ -1411,174 +1387,136 @@ function ProductDetails() {
 
           </div>
 
-          {/* WRITE REVIEW */}
+          {}
 
-          {user ? (
-            <div className="border border-gray-200 rounded-2xl p-5">
+          <div className="border border-gray-200 rounded-2xl p-5">
 
-              <h3 className="text-lg font-semibold text-gray-900">
-                Write a Review
-              </h3>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Write a Review
+            </h3>
 
-              <p className="text-sm text-gray-500 mt-1 mb-4">
-                Share your experience with this product.
-              </p>
+            <p className="text-sm text-gray-500 mt-1 mb-4">
+              Share your experience with this product.
+            </p>
 
-              {/* STARS */}
+            {}
 
-              <div className="flex items-center gap-1 mb-4">
+            <div className="flex items-center gap-1 mb-4">
 
-                {[1, 2, 3, 4, 5].map(
-                  (star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() =>
-                        setRating(star)
+              {[1, 2, 3, 4, 5].map(
+                (star) => (
+                  <button
+                    type="button"
+                    key={star}
+                    onClick={() =>
+                      setRating(star)
+                    }
+                    aria-label={`${star} star`}
+                    className={`
+                      text-3xl
+                      leading-none
+                      transition
+                      ${
+                        star <= rating
+                          ? "text-[#6B4F3A]"
+                          : "text-gray-300 hover:text-[#5A4030]"
                       }
-                      aria-label={`${star} star`}
-                      className={`
-                        text-3xl
-                        leading-none
-                        transition
-                        ${
-                          star <= rating
-                            ? "text-yellow-400"
-                            : "text-gray-300 hover:text-yellow-300"
-                        }
-                      `}
-                    >
-                      ★
-                    </button>
-                  )
-                )}
+                    `}
+                  >
+                    ★
+                  </button>
+                )
+              )}
 
-                <span className="text-sm text-gray-500 ml-2">
-                  {rating > 0
-                    ? `${rating}/5`
-                    : "Select a rating"}
-                </span>
-
-              </div>
-
-              {/* TITLE */}
-
-              <input
-                type="text"
-                value={reviewTitle}
-                onChange={(e) =>
-                  setReviewTitle(
-                    e.target.value
-                  )
-                }
-                placeholder="Review title (optional)"
-                className="
-                  w-full
-                  border
-                  border-gray-300
-                  rounded-xl
-                  px-4
-                  py-3
-                  mb-3
-                  outline-none
-                  focus:border-gray-500
-                "
-              />
-
-              {/* COMMENT */}
-
-              <textarea
-                rows="4"
-                value={reviewComment}
-                onChange={(e) =>
-                  setReviewComment(
-                    e.target.value
-                  )
-                }
-                placeholder="Write your review..."
-                className="
-                  w-full
-                  border
-                  border-gray-300
-                  rounded-xl
-                  px-4
-                  py-3
-                  mb-4
-                  outline-none
-                  focus:border-gray-500
-                  resize-none
-                "
-              />
-
-              <button
-                type="button"
-                onClick={
-                  handleSubmitReview
-                }
-                disabled={
-                  reviewLoading
-                }
-                className="
-                  w-full
-                  sm:w-auto
-                  bg-black
-                  text-white
-                  px-6
-                  py-3
-                  rounded-xl
-                  font-semibold
-                  hover:bg-gray-800
-                  transition
-                  disabled:opacity-50
-                "
-              >
-                {reviewLoading
-                  ? "Submitting..."
-                  : "Submit Review"}
-              </button>
+              <span className="text-sm text-gray-500 ml-2">
+                {rating > 0
+                  ? `${rating}/5`
+                  : "Select a rating"}
+              </span>
 
             </div>
-          ) : (
-            <div className="border border-gray-200 rounded-2xl p-5 flex flex-col justify-center">
 
-              <h3 className="text-lg font-semibold text-gray-900">
-                Want to write a review?
-              </h3>
+            {}
 
-              <p className="text-sm text-gray-500 mt-1">
-                Login to share your rating and review.
-              </p>
+            <input
+              type="text"
+              value={reviewTitle}
+              onChange={(e) =>
+                setReviewTitle(
+                  e.target.value
+                )
+              }
+              placeholder="Review title (optional)"
+              className="
+                w-full
+                border
+                border-gray-300
+                rounded-xl
+                px-4
+                py-3
+                mb-3
+                outline-none
+                focus:border-[#6B4F3A]
+              "
+            />
 
-              <button
-                type="button"
-                onClick={() =>
-                  navigate("/login")
-                }
-                className="
-                  mt-4
-                  w-full
-                  sm:w-fit
-                  bg-black
-                  text-white
-                  px-6
-                  py-3
-                  rounded-xl
-                  font-semibold
-                  hover:bg-gray-800
-                  transition
-                "
-              >
-                Login to Review
-              </button>
+            {}
 
-            </div>
-          )}
+            <textarea
+              rows="4"
+              value={reviewComment}
+              onChange={(e) =>
+                setReviewComment(
+                  e.target.value
+                )
+              }
+              placeholder="Write your review..."
+              className="
+                w-full
+                border
+                border-gray-300
+                rounded-xl
+                px-4
+                py-3
+                mb-4
+                outline-none
+                focus:border-[#6B4F3A]
+                resize-none
+              "
+            />
+
+            <button
+              type="button"
+              onClick={
+                handleSubmitReview
+              }
+              disabled={
+                reviewLoading
+              }
+              className="
+                w-full
+                sm:w-auto
+                bg-[#5A4030]
+                text-white
+                px-6
+                py-3
+                rounded-xl
+                font-semibold
+                hover:bg-[#4A3326]
+                transition
+                disabled:opacity-50
+              "
+            >
+              {reviewLoading
+                ? "Submitting..."
+                : "Submit Review"}
+            </button>
+
+          </div>
 
         </div>
 
-        {/* 
-            REVIEW LIST
-        */}
+        {}
 
         <div className="mt-7">
 
@@ -1645,7 +1583,7 @@ function ProductDetails() {
                       "
                     >
 
-                      {/* USER + RATING */}
+                      {}
 
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
 
@@ -1658,7 +1596,7 @@ function ProductDetails() {
 
                           <div className="flex items-center gap-2 mt-1">
 
-                            <div className="text-yellow-400 text-sm tracking-wide">
+                            <div className="text-[#6B4F3A] text-sm tracking-wide">
 
                               {"★".repeat(
                                 reviewRating
@@ -1695,7 +1633,7 @@ function ProductDetails() {
 
                       </div>
 
-                      {/* TITLE */}
+                      {}
 
                       {review.title && (
                         <h4 className="font-semibold text-gray-900 mt-4">
@@ -1703,7 +1641,7 @@ function ProductDetails() {
                         </h4>
                       )}
 
-                      {/* COMMENT */}
+                      {}
 
                       <p className="text-gray-600 mt-2 leading-6">
                         {review.comment}
@@ -1722,6 +1660,29 @@ function ProductDetails() {
 
       </section>
 
+      <ToastContainer
+        position="bottom-center"
+        autoClose={1800}
+        hideProgressBar
+        newestOnTop
+        closeButton={false}
+        closeOnClick
+        pauseOnHover={false}
+        draggable={false}
+        theme="light"
+        icon={false}
+        toastStyle={{
+          background: "#FFF5F7",
+          color: "#78394B",
+          border: "1px solid #F0C7D1",
+          borderRadius: "10px",
+          boxShadow: "0 4px 14px rgba(120, 57, 75, 0.10)",
+          fontSize: "13px",
+          fontWeight: "500",
+          minHeight: "42px",
+          padding: "10px 14px",
+        }}
+      />
     </div>
   );
 }

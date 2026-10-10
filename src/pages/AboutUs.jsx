@@ -13,37 +13,37 @@ import {
 
 function AboutUs() {
   return (
-    <main className="min-h-screen bg-white text-stone-900">
+    <main className="min-h-screen bg-[#F7F3EE] text-[#5A4030]">
 
       {/* 
           HERO
       */}
 
-      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20">
+      <section className="bg-[#F7F3EE] px-5 sm:px-8 md:px-14 py-16 sm:py-20">
 
         <div className="max-w-5xl mx-auto text-center">
 
-          <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-stone-400">
+          <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-[#8A7768]">
             About Kidzy
           </p>
 
           <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-black mt-4">
             Little Things.
             <br />
-            <span className="text-amber-600">
+            <span className="text-[#5A4030]">
               Big Smiles.
             </span>
           </h1>
 
-          <div className="h-[3px] w-14 bg-amber-500 rounded-full mx-auto mt-6 mb-7" />
+          <div className="h-[3px] w-14 bg-[#6B4F3A] rounded-full mx-auto mt-6 mb-7" />
 
-          <p className="max-w-3xl mx-auto text-stone-600 text-base sm:text-lg leading-relaxed">
+          <p className="max-w-3xl mx-auto text-[#5A4030] text-base sm:text-lg leading-relaxed">
             Kidzy is a place created for little personalities,
             growing imaginations and the families who make childhood
             special.
           </p>
 
-          <p className="max-w-3xl mx-auto text-stone-500 text-sm sm:text-base leading-relaxed mt-4">
+          <p className="max-w-3xl mx-auto text-[#6B4F3A] text-sm sm:text-base leading-relaxed mt-4">
             From fashion and footwear to toys, books, accessories,
             school essentials and activities, we bring together the
             things kids love in one simple place.
@@ -58,7 +58,7 @@ function AboutUs() {
           OUR INSPIRATION
        */}
 
-      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#e5ddd4]">
+      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#E7DED5]">
 
         <div className="max-w-7xl mx-auto">
 
@@ -66,7 +66,7 @@ function AboutUs() {
 
           <div className="text-center max-w-3xl mx-auto">
 
-            <p className="text-lg sm:text-xl italic font-serif text-stone-500">
+            <p className="text-lg sm:text-xl italic font-serif text-[#6B4F3A]">
               Where We Find
             </p>
 
@@ -74,7 +74,7 @@ function AboutUs() {
               Our Inspiration
             </h2>
 
-            <p className="text-stone-600 leading-relaxed mt-5 text-sm sm:text-base">
+            <p className="text-[#5A4030] leading-relaxed mt-5 text-sm sm:text-base">
               We find inspiration in everyday childhood — the way
               children play, learn, explore, create and express their
               unique personalities.
@@ -89,9 +89,9 @@ function AboutUs() {
 
             {/* CARD 1 */}
 
-            <div className="text-center border border-[#e5ddd4] rounded-2xl p-7 bg-white hover:shadow-md transition">
+            <div className="text-center border border-[#E7DED5] rounded-2xl p-7 bg-white hover:shadow-md transition">
 
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#FCE5DB] flex items-center justify-center text-stone-900 text-2xl">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#F7F3EE] flex items-center justify-center text-[#5A4030] text-2xl">
                 <FaCamera />
               </div>
 
@@ -99,7 +99,7 @@ function AboutUs() {
                 Everyday Childhood
               </h3>
 
-              <p className="text-sm text-stone-500 leading-relaxed mt-2">
+              <p className="text-sm text-[#6B4F3A] leading-relaxed mt-2">
                 The little moments, routines and adventures that make
                 childhood memorable.
               </p>
@@ -109,9 +109,9 @@ function AboutUs() {
 
             {/* CARD 2 */}
 
-            <div className="text-center border border-[#e5ddd4] rounded-2xl p-7 bg-white hover:shadow-md transition">
+            <div className="text-center border border-[#E7DED5] rounded-2xl p-7 bg-white hover:shadow-md transition">
 
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#FFF7D6] flex items-center justify-center text-stone-900 text-2xl">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#F7F3EE] flex items-center justify-center text-[#5A4030] text-2xl">
                 <FaLightbulb />
               </div>
 
@@ -119,7 +119,7 @@ function AboutUs() {
                 Parent Insights
               </h3>
 
-              <p className="text-sm text-stone-500 leading-relaxed mt-2">
+              <p className="text-sm text-[#6B4F3A] leading-relaxed mt-2">
                 Understanding the everyday needs of parents and
                 growing families.
               </p>
@@ -129,9 +129,9 @@ function AboutUs() {
 
             {/* CARD 3 */}
 
-            <div className="text-center border border-[#e5ddd4] rounded-2xl p-7 bg-white hover:shadow-md transition">
+            <div className="text-center border border-[#E7DED5] rounded-2xl p-7 bg-white hover:shadow-md transition">
 
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#D7F0EF] flex items-center justify-center text-stone-900 text-2xl">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#F7F3EE] flex items-center justify-center text-[#5A4030] text-2xl">
                 <FaChild />
               </div>
 
@@ -139,7 +139,7 @@ function AboutUs() {
                 Kids Themselves
               </h3>
 
-              <p className="text-sm text-stone-500 leading-relaxed mt-2">
+              <p className="text-sm text-[#6B4F3A] leading-relaxed mt-2">
                 Their favourites, curiosity, energy and wonderfully
                 unique personalities.
               </p>
@@ -149,9 +149,9 @@ function AboutUs() {
 
             {/* CARD 4 */}
 
-            <div className="text-center border border-[#e5ddd4] rounded-2xl p-7 bg-white hover:shadow-md transition">
+            <div className="text-center border border-[#E7DED5] rounded-2xl p-7 bg-white hover:shadow-md transition">
 
-              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#DCE6FA] flex items-center justify-center text-stone-900 text-2xl">
+              <div className="w-20 h-20 mx-auto rounded-2xl bg-[#F7F3EE] flex items-center justify-center text-[#5A4030] text-2xl">
                 <FaPuzzlePiece />
               </div>
 
@@ -159,7 +159,7 @@ function AboutUs() {
                 Play & Imagination
               </h3>
 
-              <p className="text-sm text-stone-500 leading-relaxed mt-2">
+              <p className="text-sm text-[#6B4F3A] leading-relaxed mt-2">
                 The stories, games, creativity and imagination that
                 make childhood special.
               </p>
@@ -173,7 +173,7 @@ function AboutUs() {
 
           <div className="flex justify-center mt-14">
 
-            <div className="text-amber-500 text-3xl tracking-widest">
+            <div className="text-[#6B4F3A] text-3xl tracking-widest">
               〰〰
             </div>
 
@@ -188,7 +188,7 @@ function AboutUs() {
           OUR STORY
        */}
 
-      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#e5ddd4]">
+      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#E7DED5]">
 
         <div className="max-w-6xl mx-auto">
 
@@ -198,33 +198,33 @@ function AboutUs() {
 
             <div>
 
-              <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-stone-400">
+              <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-[#8A7768]">
                 Our Story
               </p>
 
               <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-black leading-tight mt-3">
                 Built around
                 <br />
-                <span className="text-amber-600">
+                <span className="text-[#5A4030]">
                   little moments
                 </span>
               </h2>
 
-              <div className="h-[3px] w-14 bg-amber-500 rounded-full mt-6 mb-6" />
+              <div className="h-[3px] w-14 bg-[#6B4F3A] rounded-full mt-6 mb-6" />
 
-              <p className="text-stone-600 leading-relaxed">
+              <p className="text-[#5A4030] leading-relaxed">
                 Kidzy started with a simple idea: shopping for
                 children should feel easy, enjoyable and full of
                 discovery.
               </p>
 
-              <p className="text-stone-600 leading-relaxed mt-5">
+              <p className="text-[#5A4030] leading-relaxed mt-5">
                 Parents are always looking for things that fit into
                 everyday family life — comfortable clothing, school
                 essentials, fun toys, books and useful accessories.
               </p>
 
-              <p className="text-stone-600 leading-relaxed mt-5">
+              <p className="text-[#5A4030] leading-relaxed mt-5">
                 Kidzy brings these everyday needs together so families
                 can discover, choose and shop from one place.
               </p>
@@ -238,9 +238,9 @@ function AboutUs() {
 
               {/* ITEM 1 */}
 
-              <div className="rounded-2xl border border-[#e5ddd4] p-6 min-h-[180px] flex flex-col justify-between bg-white">
+              <div className="rounded-2xl border border-[#E7DED5] p-6 min-h-[180px] flex flex-col justify-between bg-white">
 
-                <div className="w-11 h-11 rounded-xl bg-[#FFF7D6] flex items-center justify-center text-amber-600">
+                <div className="w-11 h-11 rounded-xl bg-[#F7F3EE] flex items-center justify-center text-[#5A4030]">
                   <FaHeart />
                 </div>
 
@@ -249,7 +249,7 @@ function AboutUs() {
                     Made with Care
                   </h3>
 
-                  <p className="text-sm text-stone-500 mt-2">
+                  <p className="text-sm text-[#6B4F3A] mt-2">
                     Every little detail matters.
                   </p>
                 </div>
@@ -259,9 +259,9 @@ function AboutUs() {
 
               {/* ITEM 2 */}
 
-              <div className="rounded-2xl border border-[#e5ddd4] p-6 min-h-[180px] flex flex-col justify-between bg-white">
+              <div className="rounded-2xl border border-[#E7DED5] p-6 min-h-[180px] flex flex-col justify-between bg-white">
 
-                <div className="w-11 h-11 rounded-xl bg-[#FCE5DB] flex items-center justify-center text-orange-500">
+                <div className="w-11 h-11 rounded-xl bg-[#F7F3EE] flex items-center justify-center text-[#6B4F3A]">
                   <FaSmile />
                 </div>
 
@@ -270,7 +270,7 @@ function AboutUs() {
                     Made for Smiles
                   </h3>
 
-                  <p className="text-sm text-stone-500 mt-2">
+                  <p className="text-sm text-[#6B4F3A] mt-2">
                     Shopping should feel joyful.
                   </p>
                 </div>
@@ -280,9 +280,9 @@ function AboutUs() {
 
               {/* ITEM 3 */}
 
-              <div className="rounded-2xl border border-[#e5ddd4] p-6 min-h-[180px] flex flex-col justify-between bg-white">
+              <div className="rounded-2xl border border-[#E7DED5] p-6 min-h-[180px] flex flex-col justify-between bg-white">
 
-                <div className="w-11 h-11 rounded-xl bg-[#D7F0EF] flex items-center justify-center text-teal-600">
+                <div className="w-11 h-11 rounded-xl bg-[#F7F3EE] flex items-center justify-center text-[#6B4F3A]">
                   <FaStar />
                 </div>
 
@@ -291,7 +291,7 @@ function AboutUs() {
                     Quality Matters
                   </h3>
 
-                  <p className="text-sm text-stone-500 mt-2">
+                  <p className="text-sm text-[#6B4F3A] mt-2">
                     Thoughtfully selected products.
                   </p>
                 </div>
@@ -301,9 +301,9 @@ function AboutUs() {
 
               {/* ITEM 4 */}
 
-              <div className="rounded-2xl border border-[#e5ddd4] p-6 min-h-[180px] flex flex-col justify-between bg-white">
+              <div className="rounded-2xl border border-[#E7DED5] p-6 min-h-[180px] flex flex-col justify-between bg-white">
 
-                <div className="w-11 h-11 rounded-xl bg-[#DCE6FA] flex items-center justify-center text-blue-500">
+                <div className="w-11 h-11 rounded-xl bg-[#F7F3EE] flex items-center justify-center text-[#6B4F3A]">
                   <FaShoppingBag />
                 </div>
 
@@ -312,7 +312,7 @@ function AboutUs() {
                     One Happy Place
                   </h3>
 
-                  <p className="text-sm text-stone-500 mt-2">
+                  <p className="text-sm text-[#6B4F3A] mt-2">
                     Discover more in one place.
                   </p>
                 </div>
@@ -332,13 +332,13 @@ function AboutUs() {
           WHAT WE OFFER
        */}
 
-      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#e5ddd4]">
+      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#E7DED5]">
 
         <div className="max-w-7xl mx-auto">
 
           <div className="text-center mb-12">
 
-            <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-stone-400">
+            <p className="uppercase tracking-[0.25em] text-[10px] sm:text-xs font-bold text-[#8A7768]">
               What You Can Find
             </p>
 
@@ -346,7 +346,7 @@ function AboutUs() {
               Everything little ones need
             </h2>
 
-            <p className="text-stone-500 max-w-2xl mx-auto mt-4 text-sm sm:text-base">
+            <p className="text-[#6B4F3A] max-w-2xl mx-auto mt-4 text-sm sm:text-base">
               Explore a growing collection made for everyday life,
               learning, play and special moments.
             </p>
@@ -358,15 +358,15 @@ function AboutUs() {
 
             {/* FASHION */}
 
-            <div className="border border-[#e5ddd4] rounded-2xl p-6 bg-white hover:shadow-md transition">
+            <div className="border border-[#E7DED5] rounded-2xl p-6 bg-white hover:shadow-md transition">
 
-              <FaChild className="text-amber-500 text-2xl mb-4" />
+              <FaChild className="text-[#6B4F3A] text-2xl mb-4" />
 
               <h3 className="font-bold text-lg">
                 Fashion
               </h3>
 
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-[#6B4F3A] mt-2">
                 Everyday outfits and special occasion styles.
               </p>
 
@@ -375,15 +375,15 @@ function AboutUs() {
 
             {/* TOYS */}
 
-            <div className="border border-[#e5ddd4] rounded-2xl p-6 bg-white hover:shadow-md transition">
+            <div className="border border-[#E7DED5] rounded-2xl p-6 bg-white hover:shadow-md transition">
 
-              <FaPuzzlePiece className="text-amber-500 text-2xl mb-4" />
+              <FaPuzzlePiece className="text-[#6B4F3A] text-2xl mb-4" />
 
               <h3 className="font-bold text-lg">
                 Toys
               </h3>
 
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-[#6B4F3A] mt-2">
                 Fun discoveries for curious little minds.
               </p>
 
@@ -392,15 +392,15 @@ function AboutUs() {
 
             {/* BOOKS */}
 
-            <div className="border border-[#e5ddd4] rounded-2xl p-6 bg-white hover:shadow-md transition">
+            <div className="border border-[#E7DED5] rounded-2xl p-6 bg-white hover:shadow-md transition">
 
-              <FaBookOpen className="text-amber-500 text-2xl mb-4" />
+              <FaBookOpen className="text-[#6B4F3A] text-2xl mb-4" />
 
               <h3 className="font-bold text-lg">
                 Books
               </h3>
 
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-[#6B4F3A] mt-2">
                 Stories and activities that inspire imagination.
               </p>
 
@@ -409,15 +409,15 @@ function AboutUs() {
 
             {/* ESSENTIALS */}
 
-            <div className="border border-[#e5ddd4] rounded-2xl p-6 bg-white hover:shadow-md transition">
+            <div className="border border-[#E7DED5] rounded-2xl p-6 bg-white hover:shadow-md transition">
 
-              <FaShoppingBag className="text-amber-500 text-2xl mb-4" />
+              <FaShoppingBag className="text-[#6B4F3A] text-2xl mb-4" />
 
               <h3 className="font-bold text-lg">
                 Essentials
               </h3>
 
-              <p className="text-sm text-stone-500 mt-2">
+              <p className="text-sm text-[#6B4F3A] mt-2">
                 Accessories, footwear and everyday essentials.
               </p>
 
@@ -434,15 +434,15 @@ function AboutUs() {
           OUR PROMISE
       */}
 
-      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#e5ddd4]">
+      <section className="bg-white px-5 sm:px-8 md:px-14 py-16 sm:py-20 border-t border-[#E7DED5]">
 
         <div className="max-w-4xl mx-auto text-center">
 
-          <div className="w-14 h-14 mx-auto rounded-full bg-[#FFF7D6] flex items-center justify-center text-amber-600 text-xl">
+          <div className="w-14 h-14 mx-auto rounded-full bg-[#F7F3EE] flex items-center justify-center text-[#5A4030] text-xl">
             <FaHeart />
           </div>
 
-          <p className="uppercase tracking-[0.25em] text-[10px] font-bold text-stone-400 mt-6">
+          <p className="uppercase tracking-[0.25em] text-[10px] font-bold text-[#8A7768] mt-6">
             Our Promise
           </p>
 
@@ -450,13 +450,13 @@ function AboutUs() {
             Childhood should feel like childhood
           </h2>
 
-          <p className="text-stone-600 text-base sm:text-lg leading-relaxed max-w-3xl mx-auto mt-5">
+          <p className="text-[#5A4030] text-base sm:text-lg leading-relaxed max-w-3xl mx-auto mt-5">
             Colourful, playful, curious and full of little
             adventures. We want to make the shopping experience
             around childhood simple, enjoyable and memorable.
           </p>
 
-          <div className="h-[2px] w-16 bg-amber-500 rounded-full mx-auto mt-8" />
+          <div className="h-[2px] w-16 bg-[#6B4F3A] rounded-full mx-auto mt-8" />
 
         </div>
 
@@ -467,21 +467,21 @@ function AboutUs() {
           HIGHLIGHTS
      */}
 
-      <section className="bg-white border-t border-[#e5ddd4]">
+      <section className="bg-[#F7F3EE] border-t border-[#E7DED5]">
 
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4">
 
           {/* FAMILY FIRST */}
 
-          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#e5ddd4]">
+          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#E7DED5]">
 
-            <FaHeart className="mx-auto text-amber-500 mb-3" />
+            <FaHeart className="mx-auto text-[#6B4F3A] mb-3" />
 
             <h3 className="font-bold text-lg">
               Family First
             </h3>
 
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-[#6B4F3A] mt-1">
               Designed around family needs
             </p>
 
@@ -490,15 +490,15 @@ function AboutUs() {
 
           {/* QUALITY */}
 
-          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#e5ddd4]">
+          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#E7DED5]">
 
-            <FaStar className="mx-auto text-amber-500 mb-3" />
+            <FaStar className="mx-auto text-[#6B4F3A] mb-3" />
 
             <h3 className="font-bold text-lg">
               Quality Focused
             </h3>
 
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-[#6B4F3A] mt-1">
               Carefully selected products
             </p>
 
@@ -507,15 +507,15 @@ function AboutUs() {
 
           {/* EASY SHOPPING */}
 
-          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#e5ddd4]">
+          <div className="py-8 px-5 text-center border-b md:border-b-0 md:border-r border-[#E7DED5]">
 
-            <FaTruck className="mx-auto text-amber-500 mb-3" />
+            <FaTruck className="mx-auto text-[#6B4F3A] mb-3" />
 
             <h3 className="font-bold text-lg">
               Easy Shopping
             </h3>
 
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-[#6B4F3A] mt-1">
               Simple from browse to delivery
             </p>
 
@@ -526,13 +526,13 @@ function AboutUs() {
 
           <div className="py-8 px-5 text-center">
 
-            <FaShoppingBag className="mx-auto text-amber-500 mb-3" />
+            <FaShoppingBag className="mx-auto text-[#6B4F3A] mb-3" />
 
             <h3 className="font-bold text-lg">
               One Happy Place
             </h3>
 
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-[#6B4F3A] mt-1">
               Many little things in one place
             </p>
 
@@ -547,13 +547,13 @@ function AboutUs() {
           FINAL CTA
       */}
 
-      <section className="bg-stone-900 text-white px-5 sm:px-8 md:px-14 py-16 sm:py-20">
+      <section className="bg-[#5A4030] text-white px-5 sm:px-8 md:px-14 py-16 sm:py-20">
 
         <div className="max-w-4xl mx-auto text-center">
 
-          <FaHeart className="mx-auto text-amber-400 text-2xl mb-5" />
+          <FaHeart className="mx-auto text-[#E7DED5] text-2xl mb-5" />
 
-          <p className="uppercase tracking-[0.25em] text-[10px] font-bold text-stone-400">
+          <p className="uppercase tracking-[0.25em] text-[10px] font-bold text-[#8A7768]">
             Welcome to Kidzy
           </p>
 
@@ -561,7 +561,7 @@ function AboutUs() {
             Made for little moments.
           </h2>
 
-          <p className="text-stone-300 max-w-2xl mx-auto leading-relaxed mt-5">
+          <p className="text-[#E7DED5] max-w-2xl mx-auto leading-relaxed mt-5">
             Fashion, play, learning and everyday essentials —
             all brought together for little ones and their families.
           </p>

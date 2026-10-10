@@ -17,277 +17,291 @@ import {
 } from "recharts";
 
 import api from "../../api/api";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const COLORS = [
+  "#8B6B4A",
+  "#C9A982",
+  "#A8876A",
+  "#6F5542",
+  "#B69A7B",
+  "#D8C2A8",
+];
+const unwrapApiResponse = (response) => {
+  let payload = response?.data ?? response;
+
+  for (let i = 0; i < 4; i += 1) {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      break;
+    }
+
+    if (payload.data !== undefined && payload.data !== null) {
+      payload = payload.data;
+      continue;
+    }
+
+    if (payload.Data !== undefined && payload.Data !== null) {
+      payload = payload.Data;
+      continue;
+    }
+
+    break;
+  }
+
+  return payload;
+};
+
+const getValue = (object, pascalName, camelName = pascalName) =>
+  object?.[pascalName] ?? object?.[camelName];
+
+const toNumber = (value) => {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
+};
 
 function Dashboard() {
-  const [orders, setOrders] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [dashboard, setDashboard] = useState({
+    totalUsers: 0,
+    totalProducts: 0,
+    totalOrders: 0,
+    totalRevenue: 0,
+    orderPlaced: 0,
+    processing: 0,
+    shipped: 0,
+    outForDelivery: 0,
+    delivered: 0,
+    cancelled: 0,
+    monthlyRevenue: [],
+    monthlyOrders: [],
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadDashboard = async () => {
+      setLoading(true);
+
       try {
-        const [productsRes, usersRes, ordersRes] = await Promise.all([
-          api.get("/products"),
-          api.get("/users"),
-          api.get("/orders"),
-        ]);
+        const response = await api.get("/admin/dashboard");
+        const data = unwrapApiResponse(response);
 
-        const productsData = Array.isArray(productsRes.data)
-          ? productsRes.data
-          : [];
+        if (!data || typeof data !== "object") {
+          throw new Error("The dashboard API returned an invalid response.");
+        }
 
-        const usersData = Array.isArray(usersRes.data)
-          ? usersRes.data
-          : [];
+        const revenueRows =
+          getValue(data, "MonthlyRevenue", "monthlyRevenue") ?? [];
+        const orderRows =
+          getValue(data, "MonthlyOrders", "monthlyOrders") ?? [];
 
-        const ordersData = Array.isArray(ordersRes.data)
-          ? ordersRes.data
-          : [];
-
-        setProducts(productsData);
-        setOrders(ordersData);
-
-        // Only normal users
-        const normalUsers = usersData.filter(
-          (user) => String(user.role || "").toLowerCase() !== "admin"
+        const revenueByMonth = new Map(
+          (Array.isArray(revenueRows) ? revenueRows : []).map((item) => [
+            String(getValue(item, "Month", "month") ?? "").toLowerCase(),
+            toNumber(getValue(item, "Revenue", "revenue")),
+          ])
         );
 
-        setUsers(normalUsers);
+        const ordersByMonth = new Map(
+          (Array.isArray(orderRows) ? orderRows : []).map((item) => [
+            String(getValue(item, "Month", "month") ?? "").toLowerCase(),
+            toNumber(getValue(item, "Orders", "orders")),
+          ])
+        );
+
+        const normalizedDashboard = {
+          totalUsers: toNumber(getValue(data, "TotalUsers", "totalUsers")),
+          totalProducts: toNumber(
+            getValue(data, "TotalProducts", "totalProducts")
+          ),
+          totalOrders: toNumber(getValue(data, "TotalOrders", "totalOrders")),
+          totalRevenue: toNumber(
+            getValue(data, "TotalRevenue", "totalRevenue")
+          ),
+          orderPlaced: toNumber(getValue(data, "OrderPlaced", "orderPlaced")),
+          processing: toNumber(getValue(data, "Processing", "processing")),
+          shipped: toNumber(getValue(data, "Shipped", "shipped")),
+          outForDelivery: toNumber(
+            getValue(data, "OutForDelivery", "outForDelivery")
+          ),
+          delivered: toNumber(getValue(data, "Delivered", "delivered")),
+          cancelled: toNumber(getValue(data, "Cancelled", "cancelled")),
+          monthlyRevenue: MONTHS.map((month) => ({
+            month,
+            revenue: revenueByMonth.get(month.toLowerCase()) ?? 0,
+          })),
+          monthlyOrders: MONTHS.map((month) => ({
+            month,
+            orders: ordersByMonth.get(month.toLowerCase()) ?? 0,
+          })),
+        };
+
+        if (isMounted) {
+          setDashboard(normalizedDashboard);
+        }
       } catch (error) {
-        console.error("Failed to load dashboard:", error);
+        console.error("Failed to load admin dashboard:", error);
+
+        if (isMounted) {
+          const message =
+            error?.response?.data?.message ||
+            error?.response?.data?.Message ||
+            error?.message ||
+            "Failed to load dashboard data.";
+
+          toast.error(message, {
+            position: "bottom-center",
+            autoClose: 2500,
+            hideProgressBar: true,
+            closeButton: false,
+            icon: false,
+            style: {
+              background: "#FFF9F3",
+              color: "#5A4030",
+              border: "1px solid #E7DED5",
+              borderRadius: "12px",
+              boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+              fontSize: "14px",
+              fontWeight: 500,
+            },
+          });
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     loadDashboard();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // SAFE STATUS HANDLER
-  const getStatusText = (status) => {
-    if (typeof status === "string") {
-      return status;
-    }
-
-    if (status && typeof status === "object") {
-      return status.status || "";
-    }
-
-    return "";
-  };
-
-  // TOTAL REVENUE
-  const totalRevenue = orders.reduce((total, order) => {
-    const price = Number(order.totalPrice || 0);
-    return total + price;
-  }, 0);
-
-  // MONTHS
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
-  // MONTHLY REVENUE
-  const monthlyRevenue = months.map((month) => ({
-    month,
-    revenue: 0,
-  }));
-
-  orders.forEach((order) => {
-    const date = new Date(order.createdAt);
-
-    if (isNaN(date.getTime())) {
-      return;
-    }
-
-    const monthIndex = date.getMonth();
-
-    monthlyRevenue[monthIndex].revenue += Number(
-      order.totalPrice || 0
-    );
-  });
-
-  // MONTHLY ORDERS
-  const monthlyOrders = months.map((month) => ({
-    month,
-    orders: 0,
-  }));
-
-  orders.forEach((order) => {
-    const date = new Date(order.createdAt);
-
-    if (isNaN(date.getTime())) {
-      return;
-    }
-
-    const monthIndex = date.getMonth();
-
-    monthlyOrders[monthIndex].orders += 1;
-  });
-
-  // ORDER STATUS DISTRIBUTION
   const orderDistribution = [
-    {
-      name: "Order Placed",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "order placed"
-      ).length,
-    },
-    {
-      name: "Processing",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "processing"
-      ).length,
-    },
-    {
-      name: "Shipped",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "shipped"
-      ).length,
-    },
-    {
-      name: "Out for Delivery",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "out for delivery"
-      ).length,
-    },
-    {
-      name: "Delivered",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "delivered"
-      ).length,
-    },
-    {
-      name: "Cancelled",
-      value: orders.filter(
-        (order) =>
-          getStatusText(order.status).toLowerCase() ===
-          "cancelled"
-      ).length,
-    },
-  ];
-
-  const COLORS = [
-    "#a855f7",
-    "#f59e0b",
-    "#3b82f6",
-    "#6366f1",
-    "#22c55e",
-    "#ef4444",
+    { name: "Order Placed", value: dashboard.orderPlaced },
+    { name: "Processing", value: dashboard.processing },
+    { name: "Shipped", value: dashboard.shipped },
+    { name: "Out for Delivery", value: dashboard.outForDelivery },
+    { name: "Delivered", value: dashboard.delivered },
+    { name: "Cancelled", value: dashboard.cancelled },
   ];
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] p-3 sm:p-6">
+    <div className="min-h-screen bg-[#F1EAE1] p-3 sm:p-6 md:p-8">
+      <ToastContainer
+        position="bottom-center"
+        autoClose={1800}
+        hideProgressBar
+        closeButton={false}
+        icon={false}
+        toastStyle={{
+          background: "#FFF9F3",
+          color: "#5A4030",
+          border: "1px solid #E7DED5",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+          fontSize: "14px",
+          fontWeight: 500,
+        }}
+      />
 
-      {/* HEADER */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#3F3026]">
           Dashboard
         </h1>
 
-        <p className="text-gray-500 mt-1 sm:mt-2 text-sm sm:text-base">
+        <p className="text-[#817467] mt-1 sm:mt-2 text-sm sm:text-base">
           Ecommerce Admin Panel
         </p>
       </div>
 
-      {/* TOP CARDS */}
+      {loading && (
+        <div className="mb-4 rounded-xl border border-[#E7DDD2] bg-[#FFF9F3] p-4 text-sm text-[#6B5A4A] shadow-sm">
+          Loading dashboard data...
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6">
 
-        {/* PRODUCTS */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow">
-          <p className="text-gray-500 text-sm">
+          <div className="bg-[#FFFDF9] rounded-2xl border border-[#E7DDD2] bg-[#FFFDF9] p-4 sm:p-6 shadow-[0_8px_24px_rgba(73,55,43,0.06)] transition-shadow hover:shadow-[0_12px_30px_rgba(73,55,43,0.10)]">
+          <p className="text-[#817467] text-sm">
             Products
           </p>
 
-          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-gray-800">
-            {products.length}
+          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-[#3F3026]">
+            {dashboard.totalProducts}
           </h2>
 
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[#A99A8B] mt-2">
             Total products
           </p>
         </div>
 
-        {/* USERS */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow">
-          <p className="text-gray-500 text-sm">
+          <div className="bg-[#FFFDF9] rounded-2xl border border-[#E7DDD2] bg-[#FFFDF9] p-4 sm:p-6 shadow-[0_8px_24px_rgba(73,55,43,0.06)] transition-shadow hover:shadow-[0_12px_30px_rgba(73,55,43,0.10)]">
+          <p className="text-[#817467] text-sm">
             Users
           </p>
 
-          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-gray-800">
-            {users.length}
+          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-[#3F3026]">
+            {dashboard.totalUsers}
           </h2>
 
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[#A99A8B] mt-2">
             Registered customers
           </p>
         </div>
 
-        {/* ORDERS */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow">
-          <p className="text-gray-500 text-sm">
+          <div className="bg-[#FFFDF9] rounded-2xl border border-[#E7DDD2] bg-[#FFFDF9] p-4 sm:p-6 shadow-[0_8px_24px_rgba(73,55,43,0.06)] transition-shadow hover:shadow-[0_12px_30px_rgba(73,55,43,0.10)]">
+          <p className="text-[#817467] text-sm">
             Orders
           </p>
 
-          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-gray-800">
-            {orders.length}
+          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-[#3F3026]">
+            {dashboard.totalOrders}
           </h2>
 
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[#A99A8B] mt-2">
             Total orders
           </p>
         </div>
 
-        {/* REVENUE */}
-        <div className="bg-white rounded-2xl p-4 sm:p-6 shadow">
-          <p className="text-gray-500 text-sm">
+          <div className="bg-[#FFFDF9] rounded-2xl border border-[#E7DDD2] bg-[#FFFDF9] p-4 sm:p-6 shadow-[0_8px_24px_rgba(73,55,43,0.06)] transition-shadow hover:shadow-[0_12px_30px_rgba(73,55,43,0.10)]">
+          <p className="text-[#817467] text-sm">
             Revenue
           </p>
 
-          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-gray-800">
-            ₹{totalRevenue.toLocaleString("en-IN")}
+          <h2 className="text-2xl sm:text-4xl font-bold mt-2 sm:mt-3 text-[#3F3026]">
+            ₹{dashboard.totalRevenue.toLocaleString("en-IN")}
           </h2>
 
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-[#A99A8B] mt-2">
             Total order value
           </p>
         </div>
 
       </div>
 
-      {/* CHARTS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-10">
 
-        {/* REVENUE ANALYTICS */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow">
+          <div className="bg-[#FFFDF9] border border-[#E7DDD2] p-4 sm:p-6 rounded-2xl shadow-[0_8px_24px_rgba(73,55,43,0.06)]">
 
-          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-[#3F3026]">
             Revenue Analytics
           </h2>
 
           <div className="w-full h-[250px] sm:h-[300px] md:h-[350px]">
 
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyRevenue}>
+              <LineChart data={dashboard.monthlyRevenue}>
 
                 <CartesianGrid strokeDasharray="3 3" />
 
@@ -312,7 +326,7 @@ function Dashboard() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#4f46e5"
+                  stroke="#8B6B4A"
                   strokeWidth={3}
                   dot={{ r: 4 }}
                   activeDot={{ r: 6 }}
@@ -324,10 +338,9 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* ORDER STATUS */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow">
+          <div className="bg-[#FFFDF9] border border-[#E7DDD2] p-4 sm:p-6 rounded-2xl shadow-[0_8px_24px_rgba(73,55,43,0.06)]">
 
-          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-[#3F3026]">
             Order Status Distribution
           </h2>
 
@@ -367,19 +380,18 @@ function Dashboard() {
 
       </div>
 
-      {/* MONTHLY ORDER DISTRIBUTION */}
       <div className="mt-6 sm:mt-10 flex justify-center px-2 sm:px-4">
 
-        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow w-full max-w-5xl">
+        <div className="bg-[#FFFDF9] border border-[#E7DDD2] p-4 sm:p-6 rounded-2xl shadow-[0_8px_24px_rgba(73,55,43,0.06)] w-full max-w-5xl">
 
-          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-gray-800">
+          <h2 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6 text-[#3F3026]">
             Monthly Order Distribution
           </h2>
 
           <div className="w-full h-[250px] sm:h-[320px] md:h-[380px]">
 
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyOrders}>
+              <BarChart data={dashboard.monthlyOrders}>
 
                 <CartesianGrid strokeDasharray="3 3" />
 
@@ -399,7 +411,7 @@ function Dashboard() {
 
                 <Bar
                   dataKey="orders"
-                  fill="#22c55e"
+                  fill="#8B6B4A"
                   radius={[8, 8, 0, 0]}
                 />
 

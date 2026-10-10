@@ -1,25 +1,309 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-// CALCULATE TOTAL
-
 const calculateTotal = (items) => {
   return items.reduce(
     (total, item) =>
       total +
-      Number(item.price || 0) *
-        Number(item.qty || 0),
+      Number(item?.price ?? 0) *
+        Number(item?.qty ?? item?.quantity ?? 0),
     0
   );
 };
 
-// INITIAL STATE
+const getValue = (object, ...keys) => {
+  if (!object) {
+    return null;
+  }
+
+  for (const key of keys) {
+    if (
+      object[key] !== undefined &&
+      object[key] !== null
+    ) {
+      return object[key];
+    }
+  }
+
+  return null;
+};
+
+const mapCartItem = (item) => {
+  if (!item) {
+    return null;
+  }
+
+  const product =
+    item.product ??
+    item.Product ??
+    null;
+
+  const productVariant =
+    item.productVariant ??
+    item.ProductVariant ??
+    null;
+
+  const cartItemId = getValue(
+    item,
+    "id",
+    "Id"
+  );
+
+  const productId =
+    getValue(
+      item,
+      "productId",
+      "ProductId"
+    ) ??
+    getValue(
+      product,
+      "id",
+      "Id"
+    );
+
+  const productVariantId =
+    getValue(
+      item,
+      "productVariantId",
+      "ProductVariantId"
+    ) ??
+    getValue(
+      productVariant,
+      "id",
+      "Id"
+    ) ??
+    null;
+
+  const productName =
+    getValue(
+      item,
+      "productName",
+      "ProductName",
+      "name",
+      "Name"
+    ) ??
+    getValue(
+      product,
+      "name",
+      "Name"
+    ) ??
+    "";
+
+  const price = Number(
+    getValue(
+      item,
+      "price",
+      "Price"
+    ) ??
+      getValue(
+        product,
+        "price",
+        "Price"
+      ) ??
+      0
+  );
+
+  const imageUrl =
+    getValue(
+      item,
+      "imageUrl",
+      "ImageUrl",
+      "image",
+      "Image"
+    ) ??
+    getValue(
+      product,
+      "imageUrl",
+      "ImageUrl",
+      "image",
+      "Image"
+    ) ??
+    "";
+
+  const ageGroup =
+    getValue(
+      item,
+      "ageGroup",
+      "AgeGroup"
+    ) ??
+    getValue(
+      productVariant,
+      "ageGroup",
+      "AgeGroup"
+    ) ??
+    "";
+
+  const size =
+    getValue(
+      item,
+      "size",
+      "Size",
+      "selectedSize"
+    ) ??
+    getValue(
+      productVariant,
+      "size",
+      "Size"
+    ) ??
+    null;
+
+  const quantity = Number(
+    getValue(
+      item,
+      "quantity",
+      "Quantity",
+      "qty"
+    ) ?? 1
+  );
+
+  return {
+    id: cartItemId,
+
+    productId:
+      productId == null
+        ? null
+        : Number(productId),
+
+    productVariantId:
+      productVariantId == null
+        ? null
+        : Number(productVariantId),
+
+    name: productName,
+
+    price,
+
+    image: imageUrl,
+
+    imageUrl,
+
+    ageGroup,
+
+    selectedAge: ageGroup || null,
+
+    selectedSize: size,
+
+    size,
+
+    qty:
+      quantity > 0
+        ? quantity
+        : 1,
+
+    quantity:
+      quantity > 0
+        ? quantity
+        : 1,
+  };
+};
+
+const normalizeCartResponse = (
+  payload
+) => {
+  if (!payload) {
+    return [];
+  }
+
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (Array.isArray(payload.items)) {
+    return payload.items;
+  }
+
+  if (Array.isArray(payload.Items)) {
+    return payload.Items;
+  }
+
+  if (
+    payload.data &&
+    Array.isArray(payload.data)
+  ) {
+    return payload.data;
+  }
+
+  if (
+    payload.data &&
+    Array.isArray(payload.data.items)
+  ) {
+    return payload.data.items;
+  }
+
+  if (
+    payload.data &&
+    Array.isArray(payload.data.Items)
+  ) {
+    return payload.data.Items;
+  }
+
+  if (
+    payload.Data &&
+    Array.isArray(payload.Data)
+  ) {
+    return payload.Data;
+  }
+
+  if (
+    payload.Data &&
+    Array.isArray(payload.Data.items)
+  ) {
+    return payload.Data.items;
+  }
+
+  if (
+    payload.Data &&
+    Array.isArray(payload.Data.Items)
+  ) {
+    return payload.Data.Items;
+  }
+
+  return [];
+};
+
+const findSameCartItem = (
+  items,
+  newItem
+) => {
+  return items.find(
+    (cartItem) => {
+      const sameProduct =
+        String(
+          cartItem?.productId ?? ""
+        ) ===
+        String(
+          newItem?.productId ?? ""
+        );
+
+      const existingVariant =
+        cartItem?.productVariantId;
+
+      const newVariant =
+        newItem?.productVariantId;
+
+      if (
+        newVariant == null &&
+        existingVariant == null
+      ) {
+        return sameProduct;
+      }
+
+      return (
+        sameProduct &&
+        String(
+          existingVariant ?? ""
+        ) ===
+          String(
+            newVariant ?? ""
+          )
+      );
+    }
+  );
+};
 
 const initialState = {
   items: [],
   totalPrice: 0,
 };
-
-// CART SLICE
 
 const cartSlice = createSlice({
   name: "cart",
@@ -27,135 +311,202 @@ const cartSlice = createSlice({
   initialState,
 
   reducers: {
-    // SET CART
+    setCart: (
+      state,
+      action
+    ) => {
+      const backendItems =
+        normalizeCartResponse(
+          action.payload
+        );
 
-    setCart: (state, action) => {
-      state.items = action.payload || [];
+      state.items =
+        backendItems
+          .map(mapCartItem)
+          .filter(Boolean);
 
       state.totalPrice =
-        calculateTotal(state.items);
+        calculateTotal(
+          state.items
+        );
     },
 
-    // ADD TO CART
+    addToCart: (
+      state,
+      action
+    ) => {
+      const item =
+        mapCartItem(
+          action.payload
+        );
 
-    addToCart: (state, action) => {
-      const item = action.payload;
-
-      const productId =
-        item.productId ?? item.id;
-
-      const selectedSize =
-        item.selectedSize || "";
+      if (!item) {
+        return;
+      }
 
       const existingItem =
-        state.items.find((cartItem) => {
-          const existingProductId =
-            cartItem.productId ??
-            cartItem.id;
-
-          const existingSize =
-            cartItem.selectedSize || "";
-
-          return (
-            String(existingProductId) ===
-              String(productId) &&
-            String(existingSize) ===
-              String(selectedSize)
-          );
-        });
+        findSameCartItem(
+          state.items,
+          item
+        );
 
       if (existingItem) {
         existingItem.qty =
-          Number(existingItem.qty || 0) +
-          Number(item.qty || 1);
+          Number(
+            existingItem.qty ?? 0
+          ) +
+          Number(
+            item.qty ?? 1
+          );
+
+        existingItem.quantity =
+          existingItem.qty;
       } else {
-        state.items.push({
-          ...item,
-          productId: productId,
-          selectedSize:
-            item.selectedSize || null,
-          qty: Number(item.qty || 1),
-        });
+        state.items.push(
+          item
+        );
       }
 
       state.totalPrice =
-        calculateTotal(state.items);
+        calculateTotal(
+          state.items
+        );
     },
 
-    // REMOVE FROM CART
-
-    removeFromCart: (state, action) => {
+    removeFromCart: (
+      state,
+      action
+    ) => {
       const {
         id,
-        selectedSize,
-      } = action.payload;
+        productVariantId,
+      } =
+        action.payload || {};
 
-      state.items = state.items.filter(
-        (item) =>
-          !(
-            String(item.id) ===
-              String(id) &&
-            String(
-              item.selectedSize || ""
-            ) ===
+      state.items =
+        state.items.filter(
+          (item) => {
+            const sameCartItem =
               String(
-                selectedSize || ""
+                item?.id ?? ""
+              ) ===
+              String(
+                id ?? ""
+              );
+
+            if (
+              !sameCartItem
+            ) {
+              return true;
+            }
+
+            if (
+              productVariantId ==
+              null
+            ) {
+              return false;
+            }
+
+            return (
+              String(
+                item?.productVariantId ??
+                  ""
+              ) !==
+              String(
+                productVariantId
               )
-          )
-      );
+            );
+          }
+        );
 
       state.totalPrice =
-        calculateTotal(state.items);
+        calculateTotal(
+          state.items
+        );
     },
 
-    // UPDATE QUANTITY
-
-    updateQty: (state, action) => {
+    updateQty: (
+      state,
+      action
+    ) => {
       const {
         id,
         qty,
-        selectedSize,
-      } = action.payload;
+        productVariantId,
+      } =
+        action.payload || {};
 
       const item =
         state.items.find(
-          (cartItem) =>
-            String(cartItem.id) ===
-              String(id) &&
-            String(
-              cartItem.selectedSize || ""
-            ) ===
+          (cartItem) => {
+            const sameId =
               String(
-                selectedSize || ""
+                cartItem?.id ?? ""
+              ) ===
+              String(
+                id ?? ""
+              );
+
+            if (!sameId) {
+              return false;
+            }
+
+            if (
+              productVariantId ==
+              null
+            ) {
+              return true;
+            }
+
+            return (
+              String(
+                cartItem?.productVariantId ??
+                  ""
+              ) ===
+              String(
+                productVariantId
               )
+            );
+          }
         );
 
-      if (!item) return;
+      if (!item) {
+        return;
+      }
 
-      item.qty = Number(qty);
+      const newQuantity =
+        Number(qty);
 
-      if (item.qty <= 0) {
+      if (
+        newQuantity <= 0
+      ) {
         state.items =
           state.items.filter(
             (cartItem) =>
               cartItem !== item
           );
+      } else {
+        item.qty =
+          newQuantity;
+
+        item.quantity =
+          newQuantity;
       }
 
       state.totalPrice =
-        calculateTotal(state.items);
+        calculateTotal(
+          state.items
+        );
     },
 
-    // CLEAR CART
-
-    clearCart: (state) => {
+    clearCart: (
+      state
+    ) => {
       state.items = [];
       state.totalPrice = 0;
     },
   },
 });
-
-// EXPORT ACTIONS
 
 export const {
   setCart,
@@ -163,8 +514,7 @@ export const {
   removeFromCart,
   updateQty,
   clearCart,
-} = cartSlice.actions;
-
-// EXPORT REDUCER
+} =
+  cartSlice.actions;
 
 export default cartSlice.reducer;

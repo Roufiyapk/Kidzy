@@ -50,9 +50,26 @@ function Wishlist() {
       }
 
       try {
-        const response = await api.get(`/wishlist?userId=${user.id}`);
+        const response = await api.get("/wishlist");
 
-        dispatch(setWishlist(response.data));
+        const wishlistData =
+          response?.data?.data ?? response?.data;
+
+        const items = Array.isArray(wishlistData?.items)
+          ? wishlistData.items.map((item) => ({
+              ...item,
+              name:
+                item.name ??
+                item.productName ??
+                "",
+              image:
+                item.image ??
+                item.imageUrl ??
+                "",
+            }))
+          : [];
+
+        dispatch(setWishlist(items));
       } catch (error) {
         console.error("Failed to fetch wishlist:", error);
         toast.error("Failed to load wishlist");
@@ -68,11 +85,11 @@ function Wishlist() {
 
   const handleRemove = async (item) => {
     try {
-      setRemovingId(item.id);
+      setRemovingId(item.productId);
 
-      await api.delete(`/wishlist/${item.id}`);
-
-      dispatch(removeFromWishlist(item.id));
+      await dispatch(
+        removeFromWishlist(item.productId)
+      ).unwrap();
 
       toast.success("Removed from wishlist");
     } catch (error) {
@@ -86,11 +103,52 @@ function Wishlist() {
 
   // CHECK IF PRODUCT HAS SIZE
 
+  const getProductSizes = (product) => {
+    if (Array.isArray(product?.sizes)) {
+      return product.sizes;
+    }
+
+    if (Array.isArray(product?.Sizes)) {
+      return product.Sizes;
+    }
+
+    if (Array.isArray(product?.variants)) {
+      return product.variants.flatMap((variant) =>
+        Array.isArray(variant?.sizes)
+          ? variant.sizes.map((sizeItem) => ({
+              ...sizeItem,
+              productVariantId:
+                sizeItem?.productVariantId ??
+                sizeItem?.ProductVariantId ??
+                sizeItem?.id ??
+                sizeItem?.Id ??
+                null,
+            }))
+          : []
+      );
+    }
+
+    if (Array.isArray(product?.Variants)) {
+      return product.Variants.flatMap((variant) =>
+        Array.isArray(variant?.Sizes)
+          ? variant.Sizes.map((sizeItem) => ({
+              ...sizeItem,
+              productVariantId:
+                sizeItem?.productVariantId ??
+                sizeItem?.ProductVariantId ??
+                sizeItem?.id ??
+                sizeItem?.Id ??
+                null,
+            }))
+          : []
+      );
+    }
+
+    return [];
+  };
+
   const hasSizes = (product) => {
-    return (
-      Array.isArray(product?.sizes) &&
-      product.sizes.length > 0
-    );
+    return getProductSizes(product).length > 0;
   };
 
   // CHECK IF PRODUCT HAS AGE
@@ -121,7 +179,15 @@ function Wishlist() {
 
   const getSizeValue = (size) => {
     if (typeof size === "object" && size !== null) {
-      return size.size;
+      return (
+        size.size ??
+        size.Size ??
+        size.name ??
+        size.Name ??
+        size.value ??
+        size.Value ??
+        ""
+      );
     }
 
     return size;
@@ -131,7 +197,11 @@ function Wishlist() {
 
   const getSizeStock = (size) => {
     if (typeof size === "object" && size !== null) {
-      return Number(size.stock ?? 0);
+      return Number(
+        size.stock ??
+        size.Stock ??
+        0
+      );
     }
 
     return 999999;
@@ -150,14 +220,17 @@ function Wishlist() {
   // REMOVE ADDED PRODUCT FROM WISHLIST
 
   const removeAddedItemFromWishlist = async (wishlistItem) => {
-    if (!wishlistItem?.id) {
+    const productId =
+      wishlistItem?.productId ?? wishlistItem?.id;
+
+    if (!productId) {
       return;
     }
 
     try {
-      await api.delete(`/wishlist/${wishlistItem.id}`);
-
-      dispatch(removeFromWishlist(wishlistItem.id));
+      await dispatch(
+        removeFromWishlist(productId)
+      ).unwrap();
     } catch (error) {
       console.error(
         "Product added to cart, but wishlist removal failed:",
@@ -190,7 +263,7 @@ function Wishlist() {
       // GET LATEST PRODUCT
 
       const response = await api.get(`/products/${productId}`);
-      const latestProduct = response.data;
+      const latestProduct = response?.data?.data ?? response?.data;
 
       const productNeedsAge = hasAge(latestProduct);
       const productNeedsSize = hasSizes(latestProduct);
@@ -248,7 +321,7 @@ function Wishlist() {
       // VALIDATE SELECTED SIZE
 
       if (productNeedsSize && size) {
-        const selectedSizeObject = latestProduct.sizes.find(
+        const selectedSizeObject = getProductSizes(latestProduct).find(
           (sizeItem) =>
             String(getSizeValue(sizeItem)) === String(size)
         );
@@ -278,80 +351,110 @@ function Wishlist() {
       }
 
       // GET CURRENT CART
+      // Same backend cart logic used by ProductPage.
 
-      const cartResponse = await api.get(
-        `/cart?userId=${user.id}`
-      );
+      const cartResponse = await api.get("/cart");
 
-      const currentCart = Array.isArray(cartResponse.data)
-        ? cartResponse.data
-        : [];
+      const cartData =
+        cartResponse?.data?.data ??
+        cartResponse?.data ??
+        [];
 
-      const selectedAgeValue = age ? String(age) : null;
-      const selectedSizeValue = size ? String(size) : null;
+      const currentCart = Array.isArray(cartData)
+        ? cartData
+        : Array.isArray(cartData?.items)
+          ? cartData.items
+          : [];
 
-      // CHECK SAME PRODUCT + AGE + SIZE
+      // FIND THE SELECTED PRODUCT VARIANT
+      // ProductPage uses ProductVariantId for duplicate checking.
+
+      const selectedSizeObject =
+        productNeedsSize && size
+          ? getProductSizes(latestProduct).find(
+              (sizeItem) =>
+                String(getSizeValue(sizeItem)) ===
+                String(size)
+            )
+          : null;
+
+      const productVariantId =
+        selectedSizeObject?.productVariantId ??
+        selectedSizeObject?.ProductVariantId ??
+        selectedSizeObject?.variantId ??
+        selectedSizeObject?.VariantId ??
+        selectedSizeObject?.id ??
+        selectedSizeObject?.Id ??
+        null;
+
+      // CHECK SAME PRODUCT + SAME VARIANT
 
       const existingItem = currentCart.find((item) => {
+        const existingProductId =
+          item.productId ??
+          item.product?.id;
+
+        const existingVariantId =
+          item.productVariantId ??
+          item.productVariant?.id ??
+          item.variantId ??
+          null;
+
         const sameProduct =
-          String(item.productId ?? item.id) ===
+          String(existingProductId) ===
           String(productId);
 
-        const itemAge = item.selectedAge
-          ? String(item.selectedAge)
-          : null;
+        const sameVariant =
+          productVariantId == null
+            ? existingVariantId == null
+            : String(existingVariantId) ===
+              String(productVariantId);
 
-        const itemSize = item.selectedSize
-          ? String(item.selectedSize)
-          : null;
-
-        return (
-          sameProduct &&
-          itemAge === selectedAgeValue &&
-          itemSize === selectedSizeValue
-        );
+        return sameProduct && sameVariant;
       });
 
-      // ALREADY IN BAG
-      // DIFFERENT MESSAGE FOR PRODUCTS WITHOUT OPTIONS
-
       if (existingItem) {
-        if (!productNeedsAge && !productNeedsSize) {
-          toast.info("Product is already in your bag");
-        } else {
-          toast.info(
-            "Product with this age and size is already in your bag"
-          );
-        }
-
+        toast.info("Already in cart");
         return;
       }
 
-      // NEW CART ITEM
+      // BACKEND CART DTO
+      // Do not send userId/name/price/image/qty.
+      // User is identified from JWT on the backend.
 
       const cartItem = {
-        userId: user.id,
-        productId: latestProduct.id,
-        name: latestProduct.name,
-        price: latestProduct.price,
-        originalPrice: latestProduct.originalPrice || null,
-        image: latestProduct.image,
-        selectedAge: age || null,
-        selectedSize: size || null,
-        qty: 1,
+        productId: Number(latestProduct.id),
+
+        productVariantId:
+          productVariantId == null
+            ? null
+            : Number(productVariantId),
+
+        quantity: 1,
       };
 
-      // ADD TO JSON SERVER
+      // ADD TO BACKEND CART
 
       await api.post("/cart", cartItem);
 
       // GET UPDATED CART
 
-      const updatedResponse = await api.get(
-        `/cart?userId=${user.id}`
-      );
+      const updatedResponse =
+        await api.get("/cart");
 
-      dispatch(setCart(updatedResponse.data));
+      const updatedData =
+        updatedResponse?.data?.data ??
+        updatedResponse?.data ??
+        [];
+
+      const updatedCart =
+        Array.isArray(updatedData)
+          ? updatedData
+          : Array.isArray(updatedData?.items)
+            ? updatedData.items
+            : [];
+
+      dispatch(setCart(updatedCart));
 
       // REMOVE FROM WISHLIST
 
@@ -403,7 +506,7 @@ function Wishlist() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f7f3ee] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F7F3EE] flex items-center justify-center">
         <p className="text-lg font-medium">
           Loading wishlist...
         </p>
@@ -414,14 +517,14 @@ function Wishlist() {
   // PAGE
 
   return (
-    <div className="min-h-screen bg-white px-4 md:px-8 lg:px-12 py-8">
+    <div className="min-h-screen bg-[#F7F3EE] px-4 md:px-8 lg:px-12 py-8">
 
       {/* HEADER */}
 
       <div className="mb-8">
         <div className="flex items-center gap-3">
 
-          <FaHeart className="text-red-500 text-2xl" />
+          <FaHeart className="text-[#5A4030] text-2xl" />
 
           <h1 className="text-3xl md:text-4xl font-bold">
             My Wishlist
@@ -429,7 +532,7 @@ function Wishlist() {
 
         </div>
 
-        <p className="text-gray-500 mt-2">
+        <p className="text-[#6B4F3A] mt-2">
           {wishlistItems.length}{" "}
           {wishlistItems.length === 1
             ? "item"
@@ -443,20 +546,20 @@ function Wishlist() {
 
         <div className="min-h-[400px] flex flex-col items-center justify-center">
 
-          <FaHeart className="text-gray-300 text-6xl mb-5" />
+          <FaHeart className="text-[#E7DED5] text-6xl mb-5" />
 
-          <h2 className="text-xl font-semibold text-gray-700">
+          <h2 className="text-xl font-semibold text-[#5A4030]">
             Your wishlist is empty
           </h2>
 
-          <p className="text-gray-500 mt-2">
+          <p className="text-[#6B4F3A] mt-2">
             Add products you love to your wishlist.
           </p>
 
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="mt-6 bg-black text-white px-6 py-3 rounded-full hover:bg-gray-800 transition"
+            className="mt-6 bg-[#5A4030] text-white px-6 py-3 rounded-full hover:bg-[#6B4F3A] transition"
           >
             Continue Shopping
           </button>
@@ -473,7 +576,7 @@ function Wishlist() {
 
             <div
               key={item.id}
-              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-300"
+              className="bg-white rounded-2xl overflow-hidden border border-[#E7DED5] shadow-sm hover:shadow-md transition duration-300"
             >
 
               {/* IMAGE */}
@@ -496,7 +599,7 @@ function Wishlist() {
                 {/* HEART */}
 
                 <div className="absolute top-3 right-3 bg-white w-9 h-9 rounded-full flex items-center justify-center shadow">
-                  <FaHeart className="text-red-500" />
+                  <FaHeart className="text-[#5A4030]" />
                 </div>
 
               </div>
@@ -530,7 +633,7 @@ function Wishlist() {
                   {item.originalPrice &&
                     Number(item.originalPrice) >
                       Number(item.price) && (
-                      <span className="text-gray-400 text-sm line-through">
+                      <span className="text-[#8A7768] text-sm line-through">
                         ₹
                         {Number(
                           item.originalPrice
@@ -545,7 +648,7 @@ function Wishlist() {
                 <button
                   type="button"
                   onClick={() => handleAddToBag(item)}
-                  className="w-full mt-4 bg-black text-white py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-800 transition"
+                  className="w-full mt-4 bg-[#5A4030] text-white py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-[#6B4F3A] transition"
                 >
                   <FaShoppingBag className="text-sm" />
                   Add to Bag
@@ -557,7 +660,7 @@ function Wishlist() {
                   type="button"
                   onClick={() => handleRemove(item)}
                   disabled={removingId === item.id}
-                  className="w-full mt-2 border border-red-400 text-red-500 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-red-500 hover:text-white transition disabled:opacity-50"
+                  className="w-full mt-2 border border-[#E7DED5] text-[#5A4030] py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-[#6B4F3A] hover:text-white transition disabled:opacity-50"
                 >
 
                   {removingId === item.id ? (
@@ -590,14 +693,14 @@ function Wishlist() {
 
             {/* HEADER */}
 
-            <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+            <div className="px-6 py-5 border-b border-[#E7DED5] flex items-center justify-between">
 
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-[#5A4030]">
                   Select Product Options
                 </h3>
 
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-[#6B4F3A] mt-1">
                   Select the required age and size.
                 </p>
               </div>
@@ -605,7 +708,7 @@ function Wishlist() {
               <button
                 type="button"
                 onClick={closeSelectionPopup}
-                className="text-gray-500 hover:text-black text-xl"
+                className="text-[#6B4F3A] hover:text-black text-xl"
               >
                 ×
               </button>
@@ -619,7 +722,7 @@ function Wishlist() {
               {hasAge(selectedProduct) && (
                 <div className="mb-6">
 
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                  <h4 className="text-sm font-semibold text-[#5A4030] mb-3">
                     Age
                   </h4>
 
@@ -649,8 +752,8 @@ function Wishlist() {
                               transition
                               ${
                                 isSelected
-                                  ? "bg-black text-white border-black"
-                                  : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                  ? "bg-[#5A4030] text-white border-[#5A4030]"
+                                  : "bg-white text-[#5A4030] border-[#E7DED5] hover:border-[#5A4030]"
                               }
                             `}
                           >
@@ -672,13 +775,13 @@ function Wishlist() {
               {hasSizes(selectedProduct) && (
                 <div>
 
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">
+                  <h4 className="text-sm font-semibold text-[#5A4030] mb-3">
                     Size
                   </h4>
 
                   <div className="flex flex-wrap gap-2">
 
-                    {selectedProduct.sizes.map(
+                    {getProductSizes(selectedProduct).map(
                       (size, index) => {
 
                         const sizeValue =
@@ -715,13 +818,13 @@ function Wishlist() {
                               transition
                               ${
                                 isSelected
-                                  ? "bg-black text-white border-black"
-                                  : "bg-white text-gray-700 border-gray-300"
+                                  ? "bg-[#5A4030] text-white border-[#5A4030]"
+                                  : "bg-white text-[#5A4030] border-[#E7DED5]"
                               }
                               ${
                                 isOutOfStock
                                   ? "opacity-40 line-through cursor-not-allowed"
-                                  : "hover:border-black"
+                                  : "hover:border-[#5A4030]"
                               }
                             `}
                           >
@@ -745,7 +848,7 @@ function Wishlist() {
               <button
                 type="button"
                 onClick={closeSelectionPopup}
-                className="flex-1 border border-gray-300 py-3 rounded-lg hover:bg-gray-50 transition"
+                className="flex-1 border border-[#E7DED5] py-3 rounded-lg hover:bg-[#F7F3EE] transition"
               >
                 Cancel
               </button>
@@ -753,7 +856,7 @@ function Wishlist() {
               <button
                 type="button"
                 onClick={handleAddSelectedToBag}
-                className="flex-1 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
+                className="flex-1 bg-[#5A4030] text-white py-3 rounded-lg hover:bg-[#6B4F3A] transition"
               >
                 Add to Bag
               </button>

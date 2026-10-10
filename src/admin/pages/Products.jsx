@@ -1,85 +1,56 @@
-import { useMemo, useState } from "react";
-import {
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { FaEdit, FaTrash, FaUndo } from "react-icons/fa";
-import { toast } from "react-toastify";
+import { useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { FaEdit, FaEye, FaTrash, FaUndo } from "react-icons/fa";
+import { toast, ToastContainer } from "react-toastify";
 import api from "../../api/api";
 
-const CATEGORY_DATA = {
-  Girls: [
-    "Dresses",
-    "Tops",
-    "Bottoms",
-    "Ethnic Wear",
-    "Party Wear",
-  ],
-  Boys: [
-    "T-Shirts",
-    "Shirts",
-    "Pants",
-    "Ethnic Wear",
-    "Party Wear",
-  ],
-  Toys: [
-    "Educational Toys",
-    "Soft Toys",
-    "Dolls",
-    "Cars & Vehicles",
-  ],
-  "Kids Accessories": [
-    "Bags",
-    "Caps",
-    "Hair Accessories",
-    "Watches",
-    "Sunglasses",
-  ],
-  "School Supplies": [
-    "School Bags",
-    "Water Bottles",
-    "Lunch Boxes",
-  ],
-  Footwear: [
-    "Sneakers",
-    "Sandals",
-    "School Shoes",
-    "Casual Shoes",
-    "Boots",
-  ],
-  Books: [
-    "Story Books",
-    "Coloring Books",
-    "Activity Books",
-    "Educational Books",
-  ],
-  "Kids Care": [
-    "Bath & Body",
-    "Personal Care",
-  ],
-  Activities: [
-    "Arts & Crafts",
-    "DIY Kits",
-    "Puzzles",
-  ],
+const notify = (type, message) => {
+  toast[type](message, {
+    position: "bottom-center",
+    autoClose: 1800,
+    hideProgressBar: true,
+    closeButton: false,
+    icon: false,
+    style: {
+      background: "#FFF9F3",
+      color: "#5A4030",
+      border: "1px solid #E7DED5",
+      borderRadius: "12px",
+      boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+      fontSize: "14px",
+      fontWeight: 500,
+    },
+  });
 };
 
-const CATEGORY_NAMES = Object.keys(CATEGORY_DATA);
-
-const CLOTHING_AGES = [
+const AGE_CATEGORIES = [
   "0–2 Years",
-  "2–4 Years",
-  "4–6 Years",
-  "6–8 Years",
-  "8–10 Years",
+  "2–6 Years",
+  "6–10 Years",
 ];
 
-const FOOTWEAR_AGES = [
-  "0–2 Years",
-  "2–5 Years",
-  "5–8 Years",
-  "8–10 Years",
+const SIZE_CATEGORIES = [
+  "0–6 Months",
+  "6–12 Months",
+  "12–16 Months",
+  "16–24 Months",
+  "2–3 Years",
+  "3–4 Years",
+  "4–5 Years",
+  "5–6 Years",
+  "6–7 Years",
+  "7–8 Years",
+  "8–9 Years",
+  "9–10 Years",
 ];
+
+const SIZE_CATEGORY_MAP = {
+  "0–2 Years": SIZE_CATEGORIES.slice(0, 4),
+  "2–6 Years": SIZE_CATEGORIES.slice(4, 8),
+  "6–10 Years": SIZE_CATEGORIES.slice(8),
+};
+
+const SIZE_PRODUCT_CATEGORIES = ["Girls", "Boys", "Footwear"];
 
 const GENDER_CATEGORIES = [
   "Footwear",
@@ -87,78 +58,30 @@ const GENDER_CATEGORIES = [
   "School Supplies",
 ];
 
-const SIZE_CATEGORIES = ["Girls", "Boys", "Footwear"];
+const hasSizesForCategory = (category) =>
+  SIZE_PRODUCT_CATEGORIES.includes(category);
 
-const CLOTHING_SIZES = ["S", "M", "L", "XL", "XXL"];
+const hasAgeForCategory = (category) =>
+  SIZE_PRODUCT_CATEGORIES.includes(category);
 
-const FOOTWEAR_SIZES = Array.from(
-  { length: 20 },
-  (_, index) => String(16 + index)
-);
+const hasGenderForCategory = (category) =>
+  GENDER_CATEGORIES.includes(category);
 
-const getFootwearSizesForAge = (ageOrAges) => {
-  const ranges = {
-    "0–2 Years": [16, 20],
-    "2–5 Years": [21, 27],
-    "5–8 Years": [28, 32],
-    "8–10 Years": [33, 35],
-  };
+const getSizesForAgeCategory = (ageCategory) =>
+  SIZE_CATEGORY_MAP[ageCategory] || [];
 
-  const ages = Array.isArray(ageOrAges)
-    ? ageOrAges
-    : ageOrAges
-    ? [ageOrAges]
-    : [];
-
-  if (ages.length === 0) {
-    return [];
-  }
-
-  const selectedRanges = ages
-    .map((age) => ranges[age])
-    .filter(Boolean);
-
-  if (selectedRanges.length === 0) {
-    return [];
-  }
-
-  return FOOTWEAR_SIZES.filter((size) => {
-    const numericSize = Number(size);
-
-    return selectedRanges.some(([start, end]) =>
-      numericSize >= start && numericSize <= end
-    );
-  });
-};
-
-const normalizeAge = (age) => {
-  if (Array.isArray(age)) {
-    return age.filter(Boolean);
-  }
-
-  return age ? [age] : [];
-};
+const normalizeName = (value) =>
+  String(value || "").trim().toLowerCase();
 
 const createEmptySize = (size = "") => ({
   size,
   stock: "",
 });
 
-const createDefaultSizes = (category = "") => {
-  if (category === "Footwear") {
-    return FOOTWEAR_SIZES.slice(0, 4).map((size) =>
-      createEmptySize(size)
-    );
-  }
-
-  if (category === "Girls" || category === "Boys") {
-    return CLOTHING_SIZES.map((size) =>
-      createEmptySize(size)
-    );
-  }
-
-  return [];
-};
+const createEmptyAgeVariant = (ageCategory) => ({
+  ageCategory,
+  sizes: getSizesForAgeCategory(ageCategory).map(createEmptySize),
+});
 
 const createEmptyForm = () => ({
   id: null,
@@ -166,38 +89,33 @@ const createEmptyForm = () => ({
   price: "",
   originalPrice: "",
   category: "",
+  categoryId: "",
   subCategory: "",
+  subCategoryId: "",
   gender: "",
-  age: [],
-  image: "",
-  images: [""],
   description: "",
-  stock: "",
   bestSeller: false,
   newArrival: false,
-  sizes: [],
   deleted: false,
+  ageVariants: [],
+  imageFiles: [],
+  imagePreviews: [],
+  existingImages: [],
+  stock: "",
 });
-
-const hasSizesForCategory = (category) =>
-  SIZE_CATEGORIES.includes(category);
-
-const hasGenderForCategory = (category) =>
-  GENDER_CATEGORIES.includes(category);
-
-const hasAgeForCategory = (category) =>
-  category === "Girls" ||
-  category === "Boys" ||
-  category === "Footwear";
 
 function Products() {
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [view, setView] = useState("active");
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [productTypeFilter, setProductTypeFilter] = useState("all");
 
   const [confirm, setConfirm] = useState({
     open: false,
@@ -206,131 +124,322 @@ function Products() {
   });
 
   const [form, setForm] = useState(createEmptyForm());
-
+  const [isSaving, setIsSaving] = useState(false);
+  const savingRef = useRef(false);
   const limit = 5;
 
-  // FETCH PRODUCTS
   const {
-    data: products = [],
+    data: productPage = {
+      products: [],
+      currentPage: 1,
+      pageSize: limit,
+      totalProducts: 0,
+      totalPages: 1,
+    },
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", view, search, availabilityFilter, productTypeFilter, page, limit],
     queryFn: async () => {
-      const response = await api.get("/products");
-      return Array.isArray(response.data) ? response.data : [];
+      const response = await api.get("/products", {
+        params: {
+          Search: search.trim() || undefined,
+          Status: view === "trash" ? "trash" : "active",
+          StockStatus:
+            availabilityFilter === "all"
+              ? undefined
+              : {
+                  inStock: "InStock",
+                  lowStock: "LowStock",
+                  outOfStock: "OutOfStock",
+                }[availabilityFilter],
+          BestSeller:
+            productTypeFilter === "bestSeller" ? true : undefined,
+          NewArrival:
+            productTypeFilter === "newArrival" ? true : undefined,
+          Page: page,
+          PageSize: limit,
+          SortBy: "Relevance",
+        },
+      });
+
+      const body = response?.data?.data ?? response?.data ?? {};
+      const data = body?.data ?? body;
+
+      return {
+        products: data?.products ?? data?.Products ?? [],
+        currentPage: Number(
+          data?.currentPage ?? data?.CurrentPage ?? page
+        ),
+        pageSize: Number(
+          data?.pageSize ?? data?.PageSize ?? limit
+        ),
+        totalProducts: Number(
+          data?.totalProducts ?? data?.TotalProducts ?? 0
+        ),
+        totalPages: Math.max(
+          1,
+          Number(data?.totalPages ?? data?.TotalPages ?? 1)
+        ),
+      };
     },
   });
 
-  const selectedSubCategories = useMemo(() => {
-    return CATEGORY_DATA[form.category] || [];
-  }, [form.category]);
+  const products = Array.isArray(productPage.products)
+    ? productPage.products
+    : [];
+  const getProductStock = (product) => {
+    const variants = product?.variants ?? product?.Variants ?? [];
 
-  // OPEN ADD FORM
+    if (Array.isArray(variants)) {
+      const variantSizes = variants.flatMap((variant) => {
+        const sizes = variant?.sizes ?? variant?.Sizes ?? [];
+        return Array.isArray(sizes) ? sizes : [];
+      });
+
+      if (variantSizes.length > 0) {
+        return variantSizes.reduce((total, item) => {
+          const itemStock = Number(item?.stock ?? item?.Stock ?? 0);
+          return total + (Number.isFinite(itemStock) ? Math.max(0, itemStock) : 0);
+        }, 0);
+      }
+    }
+
+    const directStock = Number(product?.stock ?? product?.Stock ?? 0);
+    return Number.isFinite(directStock) ? Math.max(0, directStock) : 0;
+  };
+  const filteredProducts = products;
+
+  const totalProducts = Number(productPage.totalProducts || 0);
+  const totalPages = Math.max(1, Number(productPage.totalPages || 1));
+  const currentPage = Math.min(page, totalPages);
+
+  const normalizeCategoryResponse = (response) => {
+    const root = response?.data ?? response ?? null;
+
+    const unwrap = (value) => {
+      if (Array.isArray(value)) return value;
+      if (!value || typeof value !== "object") return [];
+
+      const candidates = [
+        value.data,
+        value.Data,
+        value.categories,
+        value.Categories,
+        value.items,
+        value.Items,
+        value.results,
+        value.Results,
+      ];
+
+      for (const candidate of candidates) {
+        if (Array.isArray(candidate)) return candidate;
+        if (candidate && typeof candidate === "object") {
+          const nested = unwrap(candidate);
+          if (nested.length > 0) return nested;
+        }
+      }
+
+      return [];
+    };
+
+    return unwrap(root)
+      .filter(Boolean)
+      .map((category) => {
+        const rawSubCategories =
+          category?.subCategories ??
+          category?.SubCategories ??
+          category?.subcategories ??
+          category?.Subcategories ??
+          [];
+
+        return {
+          id: category?.id ?? category?.Id ?? null,
+          name: String(
+            category?.name ?? category?.Name ?? ""
+          ).trim(),
+          subCategories: Array.isArray(rawSubCategories)
+            ? rawSubCategories
+                .filter(Boolean)
+                .map((subCategory) => {
+                  if (typeof subCategory === "string") {
+                    return {
+                      id: null,
+                      name: subCategory.trim(),
+                    };
+                  }
+
+                  return {
+                    id:
+                      subCategory?.id ??
+                      subCategory?.Id ??
+                      null,
+                    name: String(
+                      subCategory?.name ??
+                        subCategory?.Name ??
+                        ""
+                    ).trim(),
+                  };
+                })
+                .filter((item) => item.name)
+            : [],
+        };
+      })
+      .filter((category) => category.name);
+  };
+
+  const {
+    data: backendCategories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+    error: categoryQueryError,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      try {
+        const response = await api.get("/categories");
+        const categories = normalizeCategoryResponse(response);
+
+        if (categories.length === 0) {
+          throw new Error(
+            "The /api/categories endpoint returned no categories."
+          );
+        }
+
+        return categories;
+      } catch (error) {
+        console.error(
+          "Failed to load categories from /api/categories:",
+          error
+        );
+
+        throw error;
+      }
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const selectedCategory = backendCategories.find(
+    (item) =>
+      String(item.id ?? item.Id ?? "") ===
+        String(form.categoryId ?? "") ||
+      normalizeName(item.name ?? item.Name) ===
+        normalizeName(form.category)
+  );
+
+  const selectedSubCategories =
+    selectedCategory?.subCategories ?? [];
+
+  const categoryNames = backendCategories
+    .map((item) => item.name)
+    .filter(Boolean);
+
   const openAdd = () => {
-    setForm({
-      ...createEmptyForm(),
-      sizes: [],
-    });
+    setForm(createEmptyForm());
     setEditing(false);
+    setShowDetails(false);
     setShowForm(true);
     setPage(1);
   };
 
-  // IMAGE HANDLERS
-  const handleImageChange = (index, value) => {
-    setForm((previous) => {
-      const updatedImages = [...previous.images];
+  const handleCategoryChange = (event) => {
+    const category = event.target.value;
 
-      updatedImages[index] = value;
-
-      return {
-        ...previous,
-        images: updatedImages,
-      };
-    });
-  };
-
-  const addImage = () => {
-    setForm((previous) => ({
-      ...previous,
-      images: [...previous.images, ""],
-    }));
-  };
-
-  const removeImage = (index) => {
-    setForm((previous) => {
-      const updatedImages = previous.images.filter(
-        (_, imageIndex) => imageIndex !== index
-      );
-
-      return {
-        ...previous,
-        images: updatedImages.length > 0 ? updatedImages : [""],
-      };
-    });
-  };
-
-  // CATEGORY CHANGE
-  const handleCategoryChange = (e) => {
-    const category = e.target.value;
+    const backendCategory = backendCategories.find(
+      (item) =>
+        normalizeName(item.name ?? item.Name) ===
+        normalizeName(category)
+    );
 
     setForm((previous) => ({
       ...previous,
       category,
+      categoryId: backendCategory?.id ?? backendCategory?.Id ?? "",
       subCategory: "",
+      subCategoryId: "",
       gender: "",
-      age: [],
+      ageVariants: [],
       stock: "",
-      sizes:
-        category === "Footwear"
-          ? []
-          : createDefaultSizes(category),
     }));
   };
 
-  // AGE CHANGE - UNLIMITED AGE GROUP SELECTION
-  const handleAgeToggle = (age) => {
+  const addAgeCategory = (ageCategory) => {
     setForm((previous) => {
-      const currentAges = normalizeAge(previous.age);
-      const nextAges = currentAges.includes(age)
-        ? currentAges.filter((item) => item !== age)
-        : [...currentAges, age];
+      if (!ageCategory) return previous;
 
-      if (previous.category !== "Footwear") {
-        return {
-          ...previous,
-          age: nextAges,
-        };
+      if (
+        previous.ageVariants.some(
+          (item) => item.ageCategory === ageCategory
+        )
+      ) {
+        return previous;
       }
-
-      const allowedSizes = getFootwearSizesForAge(nextAges);
-      const previousStocks = new Map(
-        (previous.sizes || []).map((item) => [
-          String(item.size),
-          item.stock,
-        ])
-      );
 
       return {
         ...previous,
-        age: nextAges,
-        sizes: allowedSizes.map((size) => ({
-          size,
-          stock: previousStocks.get(String(size)) ?? "",
-        })),
+        ageVariants: [
+          ...previous.ageVariants,
+          createEmptyAgeVariant(ageCategory),
+        ],
       };
     });
   };
 
-  // NORMAL INPUT CHANGE
-  const handleChange = (e) => {
-    const {
-      name,
-      value,
-      type,
-      checked,
-    } = e.target;
+  const removeAgeCategory = (ageCategory) => {
+    setForm((previous) => ({
+      ...previous,
+      ageVariants: previous.ageVariants.filter(
+        (item) => item.ageCategory !== ageCategory
+      ),
+    }));
+  };
+
+  const handleAgeCategoryChange = (event) => {
+    const ageCategory = event.target.value;
+    addAgeCategory(ageCategory);
+    event.target.value = "";
+  };
+
+  const handleSizeStockChange = (
+    ageCategory,
+    size,
+    value
+  ) => {
+    setForm((previous) => ({
+      ...previous,
+      ageVariants: previous.ageVariants.map((variant) =>
+        variant.ageCategory !== ageCategory
+          ? variant
+          : {
+              ...variant,
+              sizes: variant.sizes.map((item) =>
+                item.size === size
+                  ? { ...item, stock: value }
+                  : item
+              ),
+            }
+      ),
+    }));
+  };
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+
+    if (name === "subCategory") {
+      const selected = selectedSubCategories.find(
+        (item) =>
+          normalizeName(item.name) ===
+          normalizeName(value)
+      );
+
+      setForm((previous) => ({
+        ...previous,
+        subCategory: value,
+        subCategoryId: selected?.id ?? selected?.Id ?? "",
+      }));
+      return;
+    }
 
     setForm((previous) => ({
       ...previous,
@@ -338,416 +447,361 @@ function Products() {
     }));
   };
 
-  // SIZE CHANGE
-  const handleSizeChange = (index, field, value) => {
-    setForm((previous) => {
-      const updatedSizes = [...previous.sizes];
+  const handleImageFiles = (event) => {
+    const files = Array.from(event.target.files || []);
 
-      updatedSizes[index] = {
-        ...updatedSizes[index],
-        [field]: value,
-      };
+    if (!files.length) return;
 
-      return {
-        ...previous,
-        sizes: updatedSizes,
-      };
-    });
-  };
+    const previews = files.map((file) => URL.createObjectURL(file));
 
-  // ADD SIZE ROW
-  const addSize = () => {
     setForm((previous) => ({
       ...previous,
-      sizes: [...previous.sizes, createEmptySize()],
+      imageFiles: [...previous.imageFiles, ...files],
+      imagePreviews: [...previous.imagePreviews, ...previews],
+    }));
+
+    event.target.value = "";
+  };
+
+  const removeNewImage = (index) => {
+    setForm((previous) => ({
+      ...previous,
+      imageFiles: previous.imageFiles.filter(
+        (_, fileIndex) => fileIndex !== index
+      ),
+      imagePreviews: previous.imagePreviews.filter(
+        (_, fileIndex) => fileIndex !== index
+      ),
     }));
   };
 
-  // REMOVE SIZE ROW
-  const removeSize = (index) => {
-    setForm((previous) => ({
-      ...previous,
-      sizes: previous.sizes.filter((_, sizeIndex) => sizeIndex !== index),
-    }));
-  };
-
-  // EDIT PRODUCT
-  const handleEdit = (product) => {
-    const category = product.category || "";
-
-    const productAges = normalizeAge(product.age);
-
-    const existingSizes =
-      Array.isArray(product.sizes) && product.sizes.length > 0
-        ? product.sizes.map((item) => ({
-            size: String(item.size ?? ""),
-            stock: String(item.stock ?? ""),
-          }))
-        : category === "Footwear" && productAges.length > 0
-        ? getFootwearSizesForAge(productAges).map((size) => ({
-            size,
-            stock: "",
-          }))
-        : createDefaultSizes(category);
-
-    const existingImages =
-      Array.isArray(product.images) && product.images.length > 0
-        ? product.images.map((image) => String(image ?? ""))
-        : [product.image || ""];
-
-    setForm({
-      id: product.id ?? null,
-      name: product.name ?? "",
-      price: product.price ?? "",
-      originalPrice: product.originalPrice ?? "",
-      category,
-      subCategory:
-        product.subCategory ||
-        product.subcategory ||
-        "",
-      gender: product.gender || "",
-      age: productAges,
-      image: product.image || "",
-      images: existingImages,
-      description: product.description || "",
-      stock:
-        product.stock === undefined || product.stock === null
-          ? ""
-          : String(product.stock),
-      bestSeller: Boolean(product.bestSeller),
-      newArrival: Boolean(product.newArrival),
-      sizes: existingSizes,
-      deleted: Boolean(product.deleted),
-    });
-
-    setEditing(true);
-    setShowForm(true);
-  };
-
-  // VALIDATION
   const validateForm = () => {
-    const validImages = form.images
-      .map((image) => String(image || "").trim())
-      .filter(Boolean);
-
-    if (validImages.length === 0) {
-      toast.error("Please add at least one product image.");
-      return false;
-    }
-
     if (!form.name.trim()) {
-      toast.error("Product name is required.");
+      notify("error", "Product name is required.");
       return false;
     }
 
     if (!form.category) {
-      toast.error("Please select a category.");
+      notify("error", "Please select a category.");
+      return false;
+    }
+    if (selectedSubCategories.length > 0 && !form.subCategory) {
+      notify("error", "Please select a subcategory.");
       return false;
     }
 
-    if (!form.subCategory) {
-      toast.error("Please select a subcategory.");
-      return false;
-    }
-
-    if (form.price === "" || Number(form.price) < 0) {
-      toast.error("Please enter a valid price.");
-      return false;
-    }
-
-    if (form.originalPrice !== "" && Number(form.originalPrice) < 0) {
-      toast.error("Please enter a valid original price.");
+    if (form.price === "" || Number(form.price) <= 0) {
+      notify("error", "Price must be greater than zero.");
       return false;
     }
 
     if (
       hasAgeForCategory(form.category) &&
-      (!Array.isArray(form.age) || form.age.length === 0)
+      form.ageVariants.length === 0
     ) {
-      toast.error("Please select at least one age group.");
+      notify("error", "Please select at least one age category.");
       return false;
     }
 
     if (hasGenderForCategory(form.category) && !form.gender) {
-      toast.error("Please select gender.");
+      notify("error", "Please select gender.");
       return false;
     }
 
     if (hasSizesForCategory(form.category)) {
-      if (form.sizes.length === 0) {
-        toast.error("Please add at least one size.");
-        return false;
-      }
+      for (const variant of form.ageVariants) {
+        if (!variant.sizes.length) {
+          notify("error", 
+            `No sizes found for ${variant.ageCategory}.`
+          );
+          return false;
+        }
 
-      const invalidSize = form.sizes.some(
-        (item) =>
-          !String(item.size || "").trim() ||
-          item.stock === "" ||
-          Number(item.stock) < 0
-      );
-
-      if (invalidSize) {
-        toast.error("Please enter a valid size and stock.");
-        return false;
+        for (const item of variant.sizes) {
+          if (
+            item.stock === "" ||
+            Number(item.stock) < 0
+          ) {
+            notify("error", 
+              `Enter valid stock for ${variant.ageCategory} - ${item.size}.`
+            );
+            return false;
+          }
+        }
       }
+    } else if (form.stock === "" || Number(form.stock) < 0) {
+      notify("error", "Please enter a valid stock.");
+      return false;
+    }
 
-      const duplicateSizes =
-        form.sizes.length !==
-        new Set(
-          form.sizes.map((item) =>
-            String(item.size).trim().toLowerCase()
-          )
-        ).size;
-
-      if (duplicateSizes) {
-        toast.error("Duplicate sizes are not allowed.");
-        return false;
-      }
-    } else {
-      if (form.stock === "" || Number(form.stock) < 0) {
-        toast.error("Please enter a valid stock.");
-        return false;
-      }
+    if (!editing && form.imageFiles.length === 0) {
+      notify("error", "Please select at least one product image.");
+      return false;
     }
 
     return true;
   };
 
-  // SUBMIT
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    if (!validateForm()) {
-      return;
-    }
+    if (savingRef.current) return;
+    if (!validateForm()) return;
 
-    const hasSizeData = hasSizesForCategory(form.category);
+    savingRef.current = true;
+    setIsSaving(true);
 
-    const payload = {
-      name: form.name.trim(),
-      price: Number(form.price),
-      originalPrice:
-        form.originalPrice === ""
-          ? null
-          : Number(form.originalPrice),
-      category: form.category,
-      subCategory: form.subCategory,
-      image: form.images
-        .map((image) => String(image || "").trim())
-        .filter(Boolean)[0] || form.image.trim(),
-      images: form.images
-        .map((image) => String(image || "").trim())
-        .filter(Boolean),
-      description: form.description.trim(),
-      bestSeller: Boolean(form.bestSeller),
-      newArrival: Boolean(form.newArrival),
-      deleted: Boolean(form.deleted),
-    };
-
-    if (hasAgeForCategory(form.category)) {
-      payload.age =
-        form.age.length === 1
-          ? form.age[0]
-          : form.age;
-    }
-
-    if (hasGenderForCategory(form.category)) {
-      payload.gender = form.gender;
-    }
-
-    if (hasSizeData) {
-      payload.sizes = form.sizes.map((item) => ({
-        size: String(item.size).trim(),
-        stock: Number(item.stock),
-      }));
-
-      // Keep a total stock value as well for easier dashboard use.
-      payload.stock = payload.sizes.reduce(
-        (total, item) => total + item.stock,
-        0
+    try {
+      const categoryId = form.categoryId || selectedCategory?.id || selectedCategory?.Id;
+      const selectedSubCategory = selectedSubCategories.find(
+        (item) =>
+          normalizeName(item.name) ===
+          normalizeName(form.subCategory)
       );
-    } else {
-      payload.stock = Number(form.stock);
-      payload.sizes = [];
-    }
+      const subCategoryId =
+        form.subCategoryId ||
+        selectedSubCategory?.id ||
+        selectedSubCategory?.Id;
 
-    try {
+      if (!categoryId) {
+        throw new Error("Category ID was not found from the backend.");
+      }
+      if (selectedSubCategories.length > 0 && form.subCategory && !subCategoryId) {
+        notify("error", "The selected subcategory ID could not be found. Reload categories and try again.");
+        return;
+      }
+
+      const formData = new FormData();
+
+      formData.append("Name", form.name.trim());
+      formData.append("Description", form.description.trim());
+      formData.append("Price", String(Number(form.price)));
+      formData.append("CategoryId", String(categoryId));
+      if (form.subCategory && subCategoryId) {
+        formData.append("SubCategoryId", String(subCategoryId));
+      }
+      formData.append(
+        "BestSeller",
+        String(Boolean(form.bestSeller))
+      );
+      formData.append(
+        "NewArrival",
+        String(Boolean(form.newArrival))
+      );
+
+      const totalStock = hasSizesForCategory(form.category)
+        ? form.ageVariants.reduce(
+            (total, variant) =>
+              total +
+              variant.sizes.reduce(
+                (sum, item) => sum + Number(item.stock || 0),
+                0
+              ),
+            0
+          )
+        : Number(form.stock || 0);
+
+      formData.append("Stock", String(totalStock));
+
+      if (form.gender) {
+        formData.append("Gender", form.gender);
+      }
+      form.imageFiles.forEach((image) => {
+        formData.append("Images", image);
+      });
+
+      form.ageVariants.forEach((variant, ageIndex) => {
+        formData.append(
+          `Variants[${ageIndex}].AgeGroup`,
+          variant.ageCategory
+        );
+
+        variant.sizes.forEach((item, sizeIndex) => {
+          formData.append(
+            `Variants[${ageIndex}].Sizes[${sizeIndex}].Size`,
+            item.size
+          );
+          formData.append(
+            `Variants[${ageIndex}].Sizes[${sizeIndex}].Stock`,
+            String(Number(item.stock || 0))
+          );
+        });
+      });
+
       if (editing) {
-        await api.patch(`/products/${form.id}`, payload);
-        toast.success("Product updated successfully.");
+        await api.put(`/products/${form.id}`, formData, {
+          headers: { "Content-Type": undefined },
+        });
+        notify("success", "Product updated successfully.");
       } else {
-        await api.post("/products", payload);
-        toast.success("Product added successfully.");
-      }
-
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: ["products"],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["bestSellers"],
-        }),
-        queryClient.invalidateQueries({
-          queryKey: ["newDrops"],
-        }),
-      ]);
-
-      setShowForm(false);
-      setEditing(false);
-      setForm(createEmptyForm());
-    } catch (error) {
-      console.error("Product save error:", error);
-      toast.error("Something went wrong while saving the product.");
-    }
-  };
-
-  // OPEN DELETE / RESTORE CONFIRMATION
-  const openConfirm = (type, id) => {
-    setConfirm({
-      open: true,
-      type,
-      id,
-    });
-  };
-
-  // DELETE / RESTORE
-  const handleConfirm = async () => {
-    try {
-      if (confirm.type === "delete") {
-        await api.patch(`/products/${confirm.id}`, {
-          deleted: true,
+        await api.post("/products", formData, {
+          headers: { "Content-Type": undefined },
         });
-
-        toast.success("Product moved to trash.");
-      }
-
-      if (confirm.type === "restore") {
-        await api.patch(`/products/${confirm.id}`, {
-          deleted: false,
-        });
-
-        toast.success("Product restored.");
-      }
-
-      if (confirm.type === "permanentDelete") {
-        await api.delete(`/products/${confirm.id}`);
-
-        toast.success("Product permanently deleted.");
+        notify("success", "Product added successfully.");
       }
 
       await queryClient.invalidateQueries({
         queryKey: ["products"],
       });
 
-      setConfirm({
-        open: false,
-        type: null,
-        id: null,
+      setShowForm(false);
+      setEditing(false);
+      setForm(createEmptyForm());
+    } catch (error) {
+      console.error("Product save error:", error);
+      notify("error",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Something went wrong while saving the product."
+      );
+    } finally {
+      savingRef.current = false;
+      setIsSaving(false);
+    }
+  };
+
+  const openDetails = (product) => {
+    setSelectedProduct(product);
+    setShowDetails(true);
+  };
+
+  const handleEdit = (product) => {
+    const category =
+      product.categoryName ??
+      product.CategoryName ??
+      product.category ??
+      "";
+
+    const subCategory =
+      product.subCategory ??
+      product.SubCategory ??
+      product.subCategoryName ??
+      "";
+
+    const variants = Array.isArray(product.variants)
+      ? product.variants
+      : Array.isArray(product.Variants)
+      ? product.Variants
+      : [];
+
+    const ageVariants = variants.map((variant) => {
+      const ageCategory =
+        variant?.ageGroup ?? variant?.AgeGroup ?? "";
+
+      const variantSizes = Array.isArray(variant?.sizes)
+        ? variant.sizes
+        : Array.isArray(variant?.Sizes)
+        ? variant.Sizes
+        : [];
+
+      const backendSizes = variantSizes.map((item) => ({
+        size: String(item?.size ?? item?.Size ?? ""),
+        stock: String(item?.stock ?? item?.Stock ?? ""),
+      }));
+
+      const allowedSizes = getSizesForAgeCategory(ageCategory);
+      const sizes = allowedSizes.length
+        ? allowedSizes.map((size) => ({
+            size,
+            stock:
+              backendSizes.find(
+                (item) => item.size === size
+              )?.stock ?? "",
+          }))
+        : backendSizes;
+
+      return {
+        ageCategory,
+        sizes,
+      };
+    });
+
+    const imageUrl =
+      product.imageUrl ??
+      product.ImageUrl ??
+      product.image ??
+      "";
+
+    setForm({
+      id: product.id ?? product.Id ?? null,
+      name: product.name ?? product.Name ?? "",
+      price: product.price ?? product.Price ?? "",
+      originalPrice: "",
+      category,
+      categoryId: product.categoryId ?? product.CategoryId ?? "",
+      subCategory,
+      subCategoryId:
+        product.subCategoryId ??
+        product.SubCategoryId ??
+        "",
+      gender: product.gender ?? product.Gender ?? "",
+      description:
+        product.description ?? product.Description ?? "",
+      bestSeller: Boolean(
+        product.bestSeller ?? product.BestSeller
+      ),
+      newArrival: Boolean(
+        product.newArrival ?? product.NewArrival
+      ),
+      deleted: Boolean(product.deleted ?? product.Deleted),
+      ageVariants,
+      imageFiles: [],
+      imagePreviews: [],
+      existingImages: imageUrl ? [imageUrl] : [],
+      stock: String(product.stock ?? product.Stock ?? ""),
+    });
+
+    setEditing(true);
+    setShowDetails(false);
+    setShowForm(true);
+  };
+
+  const openConfirm = (type, id) => {
+    setConfirm({ open: true, type, id });
+  };
+
+  const handleConfirm = async () => {
+    try {
+      if (confirm.type === "delete") {
+        await api.put(`/products/${confirm.id}/trash`);
+        notify("success", "Product moved to trash.");
+      }
+
+      if (confirm.type === "restore") {
+        await api.put(`/products/${confirm.id}/restore`);
+        notify("success", "Product restored.");
+      }
+
+      if (confirm.type === "permanentDelete") {
+        await api.delete(`/products/${confirm.id}`);
+        notify("success", "Product permanently deleted.");
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey: ["products"],
       });
+
+      setConfirm({ open: false, type: null, id: null });
     } catch (error) {
       console.error("Product action error:", error);
-      toast.error("Action failed.");
-    }
-  };
-
-  // ACTIVE / TRASH
-  const activeProducts = products.filter(
-    (product) => !product.deleted
-  );
-
-  const trashProducts = products.filter(
-    (product) => product.deleted
-  );
-
-  const source =
-    view === "active"
-      ? activeProducts
-      : trashProducts;
-
-  // SEARCH
-  const filteredProducts = source.filter((product) => {
-    const value = search.trim().toLowerCase();
-
-    if (!value) {
-      return true;
-    }
-
-    return [
-      product.name,
-      product.category,
-      product.subCategory,
-      product.gender,
-    ]
-      .filter(Boolean)
-      .some((field) =>
-        String(field).toLowerCase().includes(value)
-      );
-  });
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProducts.length / limit)
-  );
-
-  const currentPage =
-    page > totalPages ? totalPages : page;
-
-  const list = filteredProducts.slice(
-    (currentPage - 1) * limit,
-    currentPage * limit
-  );
-
-  // TOTAL PRODUCT STOCK FOR BADGE
-  const getProductStock = (product) => {
-    if (
-      Array.isArray(product.sizes) &&
-      product.sizes.length > 0
-    ) {
-      return product.sizes.reduce(
-        (total, item) =>
-          total + Number(item.stock || 0),
-        0
+      notify("error", 
+        error?.response?.data?.message ||
+          "Action failed."
       );
     }
-
-    return Number(product.stock || 0);
-  };
-
-  const getProductStockLabel = (product) => {
-    const stock = getProductStock(product);
-
-    if (stock <= 0) {
-      return {
-        text: "Out of Stock",
-        className:
-          "bg-red-100 text-red-700",
-      };
-    }
-
-    if (stock < 5) {
-      return {
-        text: "Low Stock",
-        className:
-          "bg-orange-100 text-orange-700",
-      };
-    }
-
-    return null;
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f5f6fa] flex items-center justify-center">
-        <p className="text-gray-500">
-          Loading products...
-        </p>
+      <div className="min-h-screen bg-[#F1EAE1] flex items-center justify-center">
+        <p className="text-[#817467]">Loading products...</p>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#f5f6fa] p-6">
+      <div className="min-h-screen bg-[#F1EAE1] p-6">
         <p className="text-red-500">
           Failed to load products.
         </p>
@@ -756,31 +810,43 @@ function Products() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f6fa] p-3 sm:p-6">
-
-      {/* CONFIRM MODAL */}
+    <div className="min-h-screen bg-[#F1EAE1] p-3 sm:p-6">
+      <ToastContainer
+        position="bottom-center"
+        autoClose={1800}
+        hideProgressBar
+        closeButton={false}
+        icon={false}
+        newestOnTop
+        limit={3}
+        toastStyle={{
+          background: "#FFF9F3",
+          color: "#5A4030",
+          border: "1px solid #E7DED5",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+          fontSize: "14px",
+          fontWeight: 500,
+        }}
+      />
       {confirm.open && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
-
-            <h2 className="text-xl font-bold text-gray-800">
+        <div className="fixed inset-0 bg-[#30251F]/40 flex items-center justify-center z-[70] p-4">
+          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-xl w-full max-w-sm p-6 text-center">
+            <h2 className="text-xl font-bold text-[#3F3026]">
               {confirm.type === "delete"
                 ? "Move Product to Trash?"
                 : confirm.type === "restore"
                 ? "Restore Product?"
                 : "Delete Product Permanently?"}
             </h2>
-
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-[#817467] mt-2">
               {confirm.type === "delete"
-                ? "This product will be moved to Trash and hidden from the active product list."
+                ? "This product will be moved to Trash."
                 : confirm.type === "restore"
-                ? "This product will be available in the active product list again."
-                : "This action will permanently remove the product from the database and cannot be undone."}
+                ? "This product will be restored."
+                : "This action cannot be undone."}
             </p>
-
             <div className="flex justify-center gap-3 mt-6">
-
               <button
                 type="button"
                 onClick={() =>
@@ -790,56 +856,245 @@ function Products() {
                     id: null,
                   })
                 }
-                className="px-5 py-2 rounded-xl border border-gray-300 hover:bg-gray-50"
+                className="px-5 py-2 rounded-xl border border-[#E0D5CA] hover:bg-[#FAF7F2]"
               >
                 Cancel
               </button>
-
               <button
                 type="button"
                 onClick={handleConfirm}
                 className={`px-5 py-2 rounded-xl text-white ${
                   confirm.type === "restore"
-                    ? "bg-green-600 hover:bg-green-700"
-                    : "bg-red-600 hover:bg-red-700"
+                    ? "bg-[#426B42] hover:bg-[#345734]"
+                    : "bg-[#A13F39] hover:bg-[#8E332E]"
                 }`}
               >
-                {confirm.type === "delete"
-                  ? "Move to Trash"
-                  : confirm.type === "restore"
-                  ? "Restore"
-                  : "Delete Permanently"}
+                Confirm
               </button>
-
             </div>
           </div>
         </div>
       )}
 
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      {showDetails && selectedProduct && (
+        <div className="fixed inset-0 bg-[#30251F]/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto p-5 sm:p-7">
+            <div className="flex items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-[#3F3026]">
+                  Product Details
+                </h2>
+                <p className="text-sm text-[#817467] mt-1">
+                  Complete product information and variants
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDetails(false)}
+                className="text-[#817467] hover:text-black text-2xl"
+              >
+                ✕
+              </button>
+            </div>
 
+            {(() => {
+              const product = selectedProduct;
+              const variants = Array.isArray(product.variants)
+                ? product.variants
+                : Array.isArray(product.Variants)
+                ? product.Variants
+                : [];
+              const image =
+                product.imageUrl ??
+                product.ImageUrl ??
+                product.image ??
+                "";
+
+              return (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
+                    <div>
+                      <img
+                        src={image}
+                        alt={product.name ?? product.Name}
+                        className="w-full h-64 object-cover rounded-2xl border"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <DetailItem
+                        label="Product Name"
+                        value={product.name ?? product.Name}
+                      />
+                      <DetailItem
+                        label="Price"
+                        value={`₹${Number(
+                          product.price ?? product.Price ?? 0
+                        ).toLocaleString("en-IN")}`}
+                      />
+                      <DetailItem
+                        label="Category"
+                        value={
+                          product.categoryName ??
+                          product.CategoryName ??
+                          product.category ??
+                          "-"
+                        }
+                      />
+                      <DetailItem
+                        label="Subcategory"
+                        value={
+                          product.subCategory ??
+                          product.SubCategory ??
+                          "-"
+                        }
+                      />
+                      <DetailItem
+                        label="Gender"
+                        value={product.gender ?? product.Gender ?? "-"}
+                      />
+                      <DetailItem
+                        label="Stock"
+                        value={String(getProductStock(product))}
+                      />
+                      <DetailItem
+                        label="Best Seller"
+                        value={
+                          product.bestSeller ?? product.BestSeller
+                            ? "Yes"
+                            : "No"
+                        }
+                      />
+                      <DetailItem
+                        label="New Arrival"
+                        value={
+                          product.newArrival ?? product.NewArrival
+                            ? "Yes"
+                            : "No"
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-bold text-[#3F3026] mb-2">
+                      Description
+                    </h3>
+                    <div className="bg-[#FAF7F2] rounded-xl p-4 text-sm text-[#5A4030] whitespace-pre-wrap">
+                      {product.description ??
+                        product.Description ??
+                        "No description"}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-bold text-[#3F3026] mb-3">
+                      Age Categories & Stock
+                    </h3>
+
+                    {variants.length === 0 ? (
+                      <p className="text-sm text-[#817467]">
+                        No variants available.
+                      </p>
+                    ) : (
+                      <div className="space-y-4">
+                        {variants.map((variant, index) => {
+                          const ageGroup =
+                            variant.ageGroup ??
+                            variant.AgeGroup ??
+                            "-";
+                          const sizes =
+                            variant.sizes ??
+                            variant.Sizes ??
+                            [];
+
+                          return (
+                            <div
+                              key={`${ageGroup}-${index}`}
+                              className="border border-[#E7DDD2] rounded-2xl overflow-hidden"
+                            >
+                              <div className="bg-[#F5F0E9] px-4 py-3 font-semibold">
+                                {ageGroup}
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="border-b">
+                                      <th className="p-3 text-left text-sm">
+                                        Size
+                                      </th>
+                                      <th className="p-3 text-left text-sm">
+                                        Stock
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {sizes.map((item, sizeIndex) => (
+                                      <tr
+                                        key={`${item.id ?? sizeIndex}`}
+                                        className="border-b last:border-b-0"
+                                      >
+                                        <td className="p-3 text-sm">
+                                          {item.size ?? item.Size}
+                                        </td>
+                                        <td className="p-3 text-sm">
+                                          {item.stock ?? item.Stock ?? 0}
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowDetails(false)}
+                      className="border border-[#E0D5CA] px-5 py-2 rounded-xl hover:bg-[#FAF7F2]"
+                    >
+                      Close
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleEdit(product)}
+                      className="bg-[#30251F] text-white px-5 py-2 rounded-xl hover:bg-[#443329]"
+                    >
+                      Edit Product
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#3F3026]">
             Products
           </h1>
-
-          <p className="text-sm text-gray-500 mt-1">
-            Manage Kidzy products and stock
+          <p className="text-sm text-[#817467] mt-1">
+            Manage Kidzy products
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2">
-
           <input
             type="text"
             placeholder="Search products..."
             value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
+            onChange={(event) => {
+              setSearch(event.target.value);
               setPage(1);
             }}
-            className="border border-gray-300 bg-white px-4 py-2 rounded-xl w-full sm:w-72 outline-none focus:border-gray-500"
+            className="border border-[#E0D5CA] bg-white px-4 py-2 rounded-xl w-full sm:w-72 outline-none"
           />
 
           <button
@@ -850,8 +1105,8 @@ function Products() {
             }}
             className={`px-4 py-2 rounded-xl border ${
               view === "active"
-                ? "bg-black text-white"
-                : "bg-white hover:bg-gray-50"
+                ? "bg-[#30251F] text-white"
+                : "bg-white hover:bg-[#FAF7F2]"
             }`}
           >
             Active
@@ -865,58 +1120,80 @@ function Products() {
             }}
             className={`px-4 py-2 rounded-xl border ${
               view === "trash"
-                ? "bg-black text-white"
-                : "bg-white hover:bg-gray-50"
+                ? "bg-[#30251F] text-white"
+                : "bg-white hover:bg-[#FAF7F2]"
             }`}
           >
             Trash
           </button>
 
+          <select
+            value={availabilityFilter}
+            onChange={(event) => {
+              setAvailabilityFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Filter by stock availability"
+            className="border border-[#E0D5CA] bg-white px-3 py-2 rounded-xl outline-none"
+          >
+            <option value="all">All Availability</option>
+            <option value="inStock">In Stock (&gt; 10)</option>
+            <option value="lowStock">Low Stock (1–10)</option>
+            <option value="outOfStock">Out of Stock (0)</option>
+          </select>
+
+          <select
+            value={productTypeFilter}
+            onChange={(event) => {
+              setProductTypeFilter(event.target.value);
+              setPage(1);
+            }}
+            aria-label="Filter by product type"
+            className="border border-[#E0D5CA] bg-white px-3 py-2 rounded-xl outline-none"
+          >
+            <option value="all">All Products</option>
+            <option value="bestSeller">Best Sellers</option>
+            <option value="newArrival">New Drops</option>
+          </select>
+
           <button
             type="button"
             onClick={openAdd}
-            className="bg-black text-white px-4 py-2 rounded-xl hover:bg-gray-800"
+            className="bg-[#30251F] text-white px-4 py-2 rounded-xl hover:bg-[#443329]"
           >
             Add Product
           </button>
-
         </div>
       </div>
 
-      {/* FORM */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="bg-white rounded-2xl shadow p-4 sm:p-6 mb-6 space-y-5"
+          className="bg-white rounded-2xl border border-[#E7DDD2] shadow-sm p-4 sm:p-6 mb-6 space-y-5"
         >
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">
-              {editing
-                ? "Edit Product"
-                : "Add Product"}
+              {editing ? "Edit Product" : "Add Product"}
             </h2>
-
             <button
               type="button"
               onClick={() => {
                 setShowForm(false);
                 setEditing(false);
               }}
-              className="text-gray-500 hover:text-black text-xl"
+              className="text-[#817467] hover:text-black text-xl"
             >
               ✕
             </button>
           </div>
 
-          {/* BASIC DETAILS */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
             <input
               name="name"
               placeholder="Product Name"
               value={form.name}
               onChange={handleChange}
-              className="border border-gray-300 p-3 rounded-xl w-full outline-none"
+              className="border border-[#E0D5CA] p-3 rounded-xl w-full outline-none"
             />
 
             <input
@@ -926,243 +1203,163 @@ function Products() {
               min="0"
               value={form.price}
               onChange={handleChange}
-              className="border border-gray-300 p-3 rounded-xl w-full outline-none"
+              className="border border-[#E0D5CA] p-3 rounded-xl w-full outline-none"
             />
 
-            <input
-              type="number"
-              name="originalPrice"
-              placeholder="Original Price (optional)"
-              min="0"
-              value={form.originalPrice}
-              onChange={handleChange}
-              className="border border-gray-300 p-3 rounded-xl w-full outline-none"
-            />
-
-            {/* MAIN CATEGORY */}
             <select
               value={form.category}
               onChange={handleCategoryChange}
-              className="border border-gray-300 p-3 rounded-xl w-full bg-white outline-none"
+              disabled={categoriesLoading || categoriesError || categoryNames.length === 0}
+              className="border border-[#E0D5CA] p-3 rounded-xl w-full bg-white outline-none disabled:bg-[#F5F0E9]"
             >
               <option value="">
-                Select Category
+                {categoriesLoading
+                  ? "Loading categories..."
+                  : categoriesError
+                  ? "Unable to load categories"
+                  : categoryNames.length === 0
+                  ? "No categories found"
+                  : "Select Category"}
               </option>
-
-              {CATEGORY_NAMES.map((category) => (
-                <option
-                  key={category}
-                  value={category}
-                >
+              {categoryNames.map((category) => (
+                <option key={category} value={category}>
                   {category}
                 </option>
               ))}
             </select>
 
-            {/* SUBCATEGORY */}
-            <select
-              name="subCategory"
-              value={form.subCategory}
-              onChange={handleChange}
-              disabled={!form.category}
-              className="border border-gray-300 p-3 rounded-xl w-full bg-white outline-none disabled:bg-gray-100"
-            >
-              <option value="">
-                Select Subcategory
-              </option>
-
-              {selectedSubCategories.map(
-                (subCategory) => (
-                  <option
-                    key={subCategory}
-                    value={subCategory}
-                  >
-                    {subCategory}
-                  </option>
-                )
-              )}
-            </select>
-
-            {/* AGE - SELECT ANY NUMBER OF AGE GROUPS */}
-            {hasAgeForCategory(form.category) && (
-              <div className="border border-gray-200 rounded-2xl p-4 md:col-span-2">
-                <div className="flex items-center justify-between gap-3 mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">
-                      Age Group
-                    </h3>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Select one or more age groups. There is no selection limit.
-                    </p>
-                  </div>
-
-                  <span className="text-sm text-gray-500">
-                    {form.age.length} selected
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {(form.category === "Footwear"
-                    ? FOOTWEAR_AGES
-                    : CLOTHING_AGES
-                  ).map((age) => {
-                    const checked = form.age.includes(age);
-
-                    return (
-                      <label
-                        key={age}
-                        className={`flex items-center gap-3 border rounded-xl px-4 py-3 cursor-pointer transition ${
-                          checked
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-300 hover:border-gray-400"
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => handleAgeToggle(age)}
-                          className="w-4 h-4 accent-orange-500"
-                        />
-                        <span className="text-sm">{age}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-
-                {form.age.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {form.age.map((age) => (
-                      <span
-                        key={age}
-                        className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs"
-                      >
-                        {age}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+            {}
+            {selectedSubCategories.length > 0 && (
+              <select
+                name="subCategory"
+                value={form.subCategory}
+                onChange={handleChange}
+                className="border border-[#E0D5CA] p-3 rounded-xl w-full bg-white outline-none"
+              >
+                <option value="">Select Subcategory (optional)</option>
+                {selectedSubCategories.map((subCategory) => {
+                  const subCategoryName = subCategory.name;
+                  return (
+                    <option
+                      key={subCategory.id ?? subCategoryName}
+                      value={subCategoryName}
+                    >
+                      {subCategoryName}
+                    </option>
+                  );
+                })}
+              </select>
             )}
 
-            {/* GENDER */}
             {hasGenderForCategory(form.category) && (
               <select
                 name="gender"
                 value={form.gender}
                 onChange={handleChange}
-                className="border border-gray-300 p-3 rounded-xl w-full bg-white outline-none"
+                className="border border-[#E0D5CA] p-3 rounded-xl w-full bg-white outline-none"
               >
-                <option value="">
-                  Select Gender
-                </option>
-
-                <option value="Boys">
-                  Boys
-                </option>
-
-                <option value="Girls">
-                  Girls
-                </option>
+                <option value="">Select Gender</option>
+                <option value="Boys">Boys</option>
+                <option value="Girls">Girls</option>
               </select>
             )}
-
           </div>
 
-          {/* PRODUCT IMAGES */}
-          <div className="border border-gray-200 rounded-2xl p-4">
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div>
-                <h3 className="font-semibold text-gray-800">
-                  Product Images
-                </h3>
-
-                <p className="text-xs text-gray-500 mt-1">
-                  Add one or multiple Cloudinary image URLs.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={addImage}
-                className="bg-black text-white px-4 py-2 rounded-xl"
-              >
-                + Add Image
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {form.images.map((image, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col sm:flex-row gap-3"
-                >
-                  <input
-                    type="text"
-                    placeholder={
-                      index === 0
-                        ? "Primary image URL"
-                        : "Additional image URL"
-                    }
-                    value={image}
-                    onChange={(e) =>
-                      handleImageChange(
-                        index,
-                        e.target.value
-                      )
-                    }
-                    className="flex-1 border border-gray-300 p-3 rounded-xl w-full outline-none"
-                  />
-
-                  {form.images.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="border border-red-200 text-red-600 px-4 py-2 rounded-xl hover:bg-red-50"
-                    >
-                      Remove
-                    </button>
-                  )}
+          {hasAgeForCategory(form.category) && (
+            <div className="border border-[#E7DDD2] rounded-2xl p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <h3 className="font-semibold text-[#3F3026]">
+                    Age Categories
+                  </h3>
+                  <p className="text-xs text-[#817467] mt-1">
+                    You can add multiple age categories to the same product.
+                  </p>
                 </div>
-              ))}
-            </div>
 
-            {form.images.some((image) => image.trim()) && (
-              <div className="flex flex-wrap gap-3 mt-4">
-                {form.images
-                  .filter((image) => image.trim())
-                  .map((image, index) => (
-                    <img
-                      key={index}
-                      src={image}
-                      alt={`Preview ${index + 1}`}
-                      className="w-24 h-24 object-cover rounded-xl border"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
+                <select
+                  value=""
+                  onChange={handleAgeCategoryChange}
+                  className="border border-[#E0D5CA] p-3 rounded-xl bg-white min-w-[220px]"
+                >
+                  <option value="">+ Add Age Category</option>
+                  {AGE_CATEGORIES.filter(
+                    (age) =>
+                      !form.ageVariants.some(
+                        (variant) => variant.ageCategory === age
+                      )
+                  ).map((age) => (
+                    <option key={age} value={age}>
+                      {age}
+                    </option>
                   ))}
+                </select>
               </div>
-            )}
-          </div>
 
-          {/* DESCRIPTION */}
-          <textarea
-            name="description"
-            placeholder="Product Description"
-            value={form.description}
-            onChange={handleChange}
-            rows={4}
-            className="border border-gray-300 p-3 rounded-xl w-full outline-none resize-none"
-          />
+              {form.ageVariants.length === 0 ? (
+                <p className="text-sm text-[#817467]">
+                  No age category selected yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {form.ageVariants.map((variant) => (
+                    <div
+                      key={variant.ageCategory}
+                      className="border border-[#E7DDD2] rounded-2xl p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <h4 className="font-semibold text-[#3F3026]">
+                          {variant.ageCategory}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            removeAgeCategory(variant.ageCategory)
+                          }
+                          className="text-red-600 text-sm hover:text-red-800"
+                        >
+                          Remove Age Category
+                        </button>
+                      </div>
 
-          {/* STOCK FOR NON-SIZE PRODUCTS */}
+                      <div className="space-y-2">
+                        {variant.sizes.map((item) => (
+                          <div
+                            key={item.size}
+                            className="grid grid-cols-[1fr_1fr] gap-3"
+                          >
+                            <div className="border border-[#E0D5CA] p-3 rounded-xl bg-[#FAF7F2]">
+                              {item.size}
+                            </div>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Stock"
+                              value={item.stock}
+                              onChange={(event) =>
+                                handleSizeStockChange(
+                                  variant.ageCategory,
+                                  item.size,
+                                  event.target.value
+                                )
+                              }
+                              className="border border-[#E0D5CA] p-3 rounded-xl"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {!hasSizesForCategory(form.category) && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[#5A4030] mb-2">
                 Stock
               </label>
-
               <input
                 type="number"
                 name="stock"
@@ -1170,141 +1367,91 @@ function Products() {
                 placeholder="Enter stock quantity"
                 value={form.stock}
                 onChange={handleChange}
-                className="border border-gray-300 p-3 rounded-xl w-full outline-none"
+                className="border border-[#E0D5CA] p-3 rounded-xl w-full outline-none"
               />
             </div>
           )}
 
-          {/* SIZES */}
-          {hasSizesForCategory(form.category) && (
-            <div className="border border-gray-200 rounded-2xl p-4">
-
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-
-                <div>
-                  <h3 className="font-semibold text-gray-800">
-                    Size & Stock
-                  </h3>
-
-                  <p className="text-xs text-gray-500 mt-1">
-                    {form.category === "Footwear"
-                      ? "Select EU shoe sizes covered by the selected age groups."
-                      : "Add the available product sizes and stock."}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={addSize}
-                  className="bg-black text-white px-4 py-2 rounded-xl"
-                >
-                  + Add Size
-                </button>
+          <div className="border border-[#E7DDD2] rounded-2xl p-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="font-semibold text-[#3F3026]">
+                  Product Images
+                </h3>
+                <p className="text-xs text-[#817467] mt-1">
+                  Select images directly from your computer. They are uploaded to Cloudinary by the backend.
+                </p>
               </div>
 
-              <div className="space-y-3">
+              <label className="bg-[#30251F] text-white px-4 py-2 rounded-xl cursor-pointer hover:bg-[#443329]">
+                + Add Images
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageFiles}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
-                {form.sizes.map((item, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-2"
-                  >
-                    {form.category === "Footwear" ? (
-                      <select
-                        value={item.size}
-                        onChange={(e) =>
-                          handleSizeChange(
-                            index,
-                            "size",
-                            e.target.value
-                          )
-                        }
-                        className="border border-gray-300 p-3 rounded-xl bg-white"
-                      >
-                        <option value="">
-                          Select Shoe Size
-                        </option>
-
-                        {getFootwearSizesForAge(form.age).map(
-                          (size) => (
-                            <option
-                              key={size}
-                              value={size}
-                            >
-                              {size}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    ) : (
-                      <select
-                        value={item.size}
-                        onChange={(e) =>
-                          handleSizeChange(
-                            index,
-                            "size",
-                            e.target.value
-                          )
-                        }
-                        className="border border-gray-300 p-3 rounded-xl bg-white"
-                      >
-                        <option value="">
-                          Select Clothing Size
-                        </option>
-
-                        {CLOTHING_SIZES.map(
-                          (size) => (
-                            <option
-                              key={size}
-                              value={size}
-                            >
-                              {size}
-                            </option>
-                          )
-                        )}
-                      </select>
-                    )}
-
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Stock"
-                      value={item.stock}
-                      onChange={(e) =>
-                        handleSizeChange(
-                          index,
-                          "stock",
-                          e.target.value
-                        )
-                      }
-                      className="border border-gray-300 p-3 rounded-xl"
+            {form.existingImages.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-[#817467] mb-2">
+                  Existing Cloudinary image
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  {form.existingImages.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image}
+                      alt="Existing product"
+                      className="w-24 h-24 object-cover rounded-xl border"
                     />
+                  ))}
+                </div>
+              </div>
+            )}
 
+            {form.imagePreviews.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {form.imagePreviews.map((image, index) => (
+                  <div key={index} className="relative">
+                    <img
+                      src={image}
+                      alt={`Selected ${index + 1}`}
+                      className="w-24 h-24 object-cover rounded-xl border"
+                    />
                     <button
                       type="button"
-                      onClick={() =>
-                        removeSize(index)
-                      }
-                      className="border border-red-200 text-red-600 px-4 py-2 rounded-xl hover:bg-red-50"
+                      onClick={() => removeNewImage(index)}
+                      className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-600 text-white text-xs"
                     >
-                      Remove
+                      ×
                     </button>
                   </div>
                 ))}
-
-                {form.sizes.length === 0 && (
-                  <p className="text-sm text-gray-500">
-                    No sizes added yet.
-                  </p>
-                )}
-
               </div>
-            </div>
-          )}
+            )}
 
-          {/* CHECKBOXES */}
+            {form.imageFiles.length === 0 &&
+              form.existingImages.length === 0 && (
+                <p className="text-sm text-[#817467]">
+                  No image selected.
+                </p>
+              )}
+          </div>
+
+          <textarea
+            name="description"
+            placeholder="Product Description"
+            value={form.description}
+            onChange={handleChange}
+            rows={4}
+            className="border border-[#E0D5CA] p-3 rounded-xl w-full outline-none resize-none"
+          />
+
           <div className="flex flex-wrap gap-6">
-
             <label className="flex items-center gap-2">
               <input
                 type="checkbox"
@@ -1324,288 +1471,244 @@ function Products() {
               />
               <span>New Arrival</span>
             </label>
-
           </div>
 
-          {/* FORM BUTTONS */}
           <div className="flex flex-col sm:flex-row gap-3">
-
             <button
               type="submit"
-              className="bg-black text-white px-5 py-3 rounded-xl hover:bg-gray-800"
+              disabled={isSaving}
+              className="bg-[#30251F] text-white px-5 py-3 rounded-xl hover:bg-[#443329] disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {editing
-                ? "Update Product"
-                : "Add Product"}
+              {isSaving
+                ? editing ? "Updating Product..." : "Adding Product..."
+                : editing ? "Update Product" : "Add Product"}
             </button>
-
             <button
               type="button"
               onClick={() => {
                 setShowForm(false);
                 setEditing(false);
               }}
-              className="border border-gray-300 px-5 py-3 rounded-xl hover:bg-gray-50"
+              className="border border-[#E0D5CA] px-5 py-3 rounded-xl hover:bg-[#FAF7F2]"
             >
               Cancel
             </button>
-
           </div>
         </form>
       )}
 
-      {/* PRODUCT TABLE */}
-      <div className="bg-white rounded-2xl shadow overflow-x-auto">
-
-        <table className="w-full min-w-[900px]">
-
-          <thead className="bg-gray-100">
+      <div className="bg-white rounded-2xl border border-[#E7DDD2] shadow-sm overflow-x-auto">
+        <table className="w-full min-w-[920px]">
+          <thead className="bg-[#F5F0E9]">
             <tr>
-              <th className="p-3 text-left">
-                Image
-              </th>
-
-              <th className="p-3 text-left">
-                Product
-              </th>
-
-              <th className="p-3 text-left">
-                Category
-              </th>
-
-              <th className="p-3 text-left">
-                Price
-              </th>
-
-              <th className="p-3 text-left">
-                Stock
-              </th>
-
-              <th className="p-3 text-center">
-                Actions
-              </th>
+              <th className="p-3 text-left">Image</th>
+              <th className="p-3 text-left">Product</th>
+              <th className="p-3 text-left">Category</th>
+              <th className="p-3 text-left">Stock</th>
+              <th className="p-3 text-left">Price</th>
+              <th className="p-3 text-center">Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {list.length === 0 ? (
+            {filteredProducts.length === 0 ? (
               <tr>
-                <td
-                  colSpan="6"
-                  className="p-10 text-center text-gray-500"
-                >
-                  No products found.
+                <td colSpan="6" className="p-10 text-center text-[#817467]">
+                  No products match the selected filters.
                 </td>
               </tr>
             ) : (
-              list.map((product) => {
-                const stockInfo =
-                  getProductStockLabel(product);
+              filteredProducts.map((product) => (
+                <tr
+                  key={product.id ?? product.Id}
+                  className="border-t hover:bg-[#FAF7F2]"
+                >
+                  <td className="p-3">
+                    <img
+                      src={
+                        product.imageUrl ??
+                        product.ImageUrl ??
+                        product.image ??
+                        ""
+                      }
+                      alt={product.name ?? product.Name}
+                      className="w-14 h-14 object-cover rounded-xl border"
+                    />
+                  </td>
 
-                return (
-                  <tr
-                    key={product.id}
-                    className="border-t hover:bg-gray-50"
-                  >
-                    <td className="p-3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-14 h-14 object-cover rounded-xl border"
-                      />
-                    </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">
+                        {product.name ?? product.Name}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#817467] mt-1">
+                      {product.subCategory ??
+                        product.SubCategory ??
+                        ""}
+                    </p>
+                  </td>
 
-                    <td className="p-3">
-                      <div className="flex items-center gap-2 flex-wrap">
+                  <td className="p-3">
+                    <span className="bg-[#F5F0E9] px-3 py-1 rounded-full text-sm">
+                      {product.categoryName ??
+                        product.CategoryName ??
+                        product.category ??
+                        "-"}
+                    </span>
+                  </td>
 
-                        <span className="font-medium">
-                          {product.name}
-                        </span>
+                  <td className="p-3">
+                    {(() => {
+                      const stock = getProductStock(product);
 
-                        {product.bestSeller && (
-                          <span className="bg-yellow-100 text-yellow-700 px-2 py-1 text-xs rounded-full">
-                            Best Seller
+                      return (
+                        <div className="flex flex-col items-start gap-1">
+                          <span className="font-semibold text-[#3F3026]">
+                            {stock} {stock === 1 ? "item" : "items"}
                           </span>
-                        )}
+                          {stock <= 0 && (
+                            <span className="px-2 py-1 rounded-full text-xs font-medium bg-[#FBEDEC] text-[#A13F39]">
+                              Out of Stock
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </td>
 
-                        {product.newArrival && (
-                          <span className="bg-green-100 text-green-700 px-2 py-1 text-xs rounded-full">
-                            New
-                          </span>
-                        )}
+                  <td className="p-3 font-medium">
+                    ₹
+                    {Number(
+                      product.price ?? product.Price ?? 0
+                    ).toLocaleString("en-IN")}
+                  </td>
 
-                      </div>
-
-                      {product.subCategory && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {product.subCategory}
-                        </p>
-                      )}
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex flex-col gap-1">
-
-                        <span className="bg-gray-100 px-3 py-1 rounded-full text-sm w-fit">
-                          {product.category}
-                        </span>
-
-                        {product.gender && (
-                          <span className="text-xs text-gray-500">
-                            {product.gender}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="p-3 font-medium">
-                      ₹
-                      {Number(
-                        product.price || 0
-                      ).toLocaleString("en-IN")}
-                    </td>
-
-                    <td className="p-3">
-                      <div className="flex flex-col gap-1">
-                        <span>
-                          {getProductStock(product)}
-                        </span>
-
-                        {stockInfo && (
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs w-fit ${stockInfo.className}`}
-                          >
-                            {stockInfo.text}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="p-3">
+                  <td className="p-3">
+                    <div className="flex justify-center items-center gap-4">
+                      <button
+                        type="button"
+                        title="View Product Details"
+                        onClick={() => openDetails(product)}
+                        className="text-[#5A4030] hover:text-black"
+                      >
+                        <FaEye />
+                      </button>
 
                       {view === "active" ? (
-                        <div className="flex justify-center gap-4">
-
+                        <>
                           <button
                             type="button"
                             title="Edit Product"
-                            onClick={() =>
-                              handleEdit(product)
-                            }
-                            className="text-blue-600 hover:text-blue-800"
+                            onClick={() => handleEdit(product)}
+                            className="text-[#5A4030] hover:text-[#30251F]"
                           >
                             <FaEdit />
                           </button>
-
                           <button
                             type="button"
                             title="Move to Trash"
                             onClick={() =>
                               openConfirm(
                                 "delete",
-                                product.id
+                                product.id ?? product.Id
                               )
                             }
-                            className="text-red-600 hover:text-red-800"
+                            className="text-[#A13F39] hover:text-[#8E332E]"
                           >
                             <FaTrash />
                           </button>
-
-                        </div>
+                        </>
                       ) : (
-                        <div className="flex justify-center items-center gap-4">
-
+                        <>
                           <button
                             type="button"
                             title="Restore Product"
                             onClick={() =>
                               openConfirm(
                                 "restore",
-                                product.id
+                                product.id ?? product.Id
                               )
                             }
-                            className="text-green-600 hover:text-green-800"
+                            className="text-[#426B42] hover:text-[#345734]"
                           >
                             <FaUndo />
                           </button>
-
                           <button
                             type="button"
                             title="Delete Permanently"
                             onClick={() =>
                               openConfirm(
                                 "permanentDelete",
-                                product.id
+                                product.id ?? product.Id
                               )
                             }
-                            className="text-red-600 hover:text-red-800"
+                            className="text-[#A13F39] hover:text-[#8E332E]"
                           >
                             <FaTrash />
                           </button>
-
-                        </div>
+                        </>
                       )}
-
-                    </td>
-                  </tr>
-                );
-              })
+                    </div>
+                  </td>
+                </tr>
+              ))
             )}
           </tbody>
-
         </table>
       </div>
 
-      {/* PAGINATION */}
-      {filteredProducts.length > 0 && (
+      {totalProducts > 0 && (
         <div className="flex justify-center items-center mt-6 gap-2 flex-wrap">
-
           <button
             type="button"
             disabled={currentPage === 1}
-            onClick={() =>
-              setPage((previous) =>
-                Math.max(1, previous - 1)
-              )
-            }
+            onClick={() => setPage((value) => Math.max(1, value - 1))}
             className="border bg-white px-4 py-2 rounded-xl disabled:opacity-50"
           >
             Prev
           </button>
 
-          {Array.from(
-            { length: totalPages },
-            (_, index) => index + 1
-          ).map((pageNumber) => (
-            <button
-              type="button"
-              key={pageNumber}
-              onClick={() => setPage(pageNumber)}
-              className={`border px-4 py-2 rounded-xl ${
-                currentPage === pageNumber
-                  ? "bg-black text-white"
-                  : "bg-white hover:bg-gray-50"
-              }`}
-            >
-              {pageNumber}
-            </button>
-          ))}
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map(
+            (pageNumber) => (
+              <button
+                type="button"
+                key={pageNumber}
+                onClick={() => setPage(pageNumber)}
+                className={`border px-4 py-2 rounded-xl ${
+                  currentPage === pageNumber
+                    ? "bg-[#30251F] text-white"
+                    : "bg-white hover:bg-[#FAF7F2]"
+                }`}
+              >
+                {pageNumber}
+              </button>
+            )
+          )}
 
           <button
             type="button"
             disabled={currentPage === totalPages}
             onClick={() =>
-              setPage((previous) =>
-                Math.min(totalPages, previous + 1)
-              )
+              setPage((value) => Math.min(totalPages, value + 1))
             }
             className="border bg-white px-4 py-2 rounded-xl disabled:opacity-50"
           >
             Next
           </button>
-
         </div>
       )}
+    </div>
+  );
+}
+
+function DetailItem({ label, value }) {
+  return (
+    <div className="border border-[#E7DDD2] rounded-xl p-3">
+      <p className="text-xs text-[#817467]">{label}</p>
+      <p className="font-medium text-[#3F3026] mt-1 break-words">
+        {value || "-"}
+      </p>
     </div>
   );
 }

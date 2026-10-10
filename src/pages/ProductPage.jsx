@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 
 import { setCart } from "../redux/cartSlice";
+
 import {
   addToWishlist,
   removeFromWishlist,
@@ -24,21 +25,326 @@ import {
   FaChevronDown,
 } from "react-icons/fa";
 
-import { toast } from "react-toastify";
-import { categories } from "../data/categories";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import api from "../api/api";
+
+const API_BASE_URL = api.defaults.baseURL.replace(/\/api\/?$/, "");
+const AGE_FILTER_OPTIONS = [
+  "0–2 Years",
+  "2–6 Years",
+  "6-10 Years",
+];
+
+const normalizeAgeLabel = (value) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s*[-–—]\s*/g, "-")
+    .replace(/\s+/g, " ");
+
+const getApiData = (response) => {
+  return response?.data?.data ?? response?.data ?? [];
+};
+
+const normalizeCategoryKey = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "");
+
+const normalizeCategoryResponse = (responseData) => {
+  const root =
+    responseData?.data ??
+    responseData ??
+    null;
+
+  const unwrap = (value) => {
+    if (Array.isArray(value)) {
+      return value;
+    }
+
+    if (!value || typeof value !== "object") {
+      return [];
+    }
+
+    const candidates = [
+      value.data,
+      value.Data,
+      value.categories,
+      value.Categories,
+      value.items,
+      value.Items,
+      value.results,
+      value.Results,
+    ];
+
+    for (const candidate of candidates) {
+      if (Array.isArray(candidate)) {
+        return candidate;
+      }
+
+      if (candidate && typeof candidate === "object") {
+        const nested = unwrap(candidate);
+        if (nested.length > 0) {
+          return nested;
+        }
+      }
+    }
+
+    return [];
+  };
+
+  return unwrap(root)
+    .filter(Boolean)
+    .map((item) => {
+      const rawSubCategories =
+        item?.subCategories ??
+        item?.SubCategories ??
+        item?.subcategories ??
+        item?.Subcategories ??
+        [];
+
+      return {
+        id: item?.id ?? item?.Id ?? null,
+        name: String(
+          item?.name ?? item?.Name ?? ""
+        ).trim(),
+        subCategories: Array.isArray(rawSubCategories)
+          ? rawSubCategories
+              .filter(Boolean)
+              .map((subCategory) => ({
+                id:
+                  subCategory?.id ??
+                  subCategory?.Id ??
+                  null,
+                name:
+                  typeof subCategory === "string"
+                    ? subCategory.trim()
+                    : String(
+                        subCategory?.name ??
+                        subCategory?.Name ??
+                        ""
+                      ).trim(),
+              }))
+              .filter((subCategory) => subCategory.name)
+          : [],
+      };
+    })
+    .filter((item) => item.name);
+};
+
+const normalizeImageUrl = (image) => {
+  if (!image) {
+    return "";
+  }
+
+  const imageString = String(image).trim();
+
+  if (!imageString) {
+    return "";
+  }
+
+  if (
+    imageString.startsWith("http://") ||
+    imageString.startsWith("https://")
+  ) {
+    return imageString;
+  }
+
+  if (imageString.startsWith("/")) {
+    return `${API_BASE_URL}${imageString}`;
+  }
+
+  return `${API_BASE_URL}/${imageString}`;
+};
+
+const normalizeProduct = (product) => {
+  const variants = Array.isArray(
+    product?.variants
+  )
+    ? product.variants
+    : Array.isArray(product?.Variants)
+      ? product.Variants
+      : [];
+
+  const sizes = variants.length > 0
+    ? variants.flatMap((variant) => {
+        const ageGroup =
+          variant?.ageGroup ??
+          variant?.AgeGroup ??
+          "";
+
+        const variantSizes =
+          Array.isArray(variant?.sizes)
+            ? variant.sizes
+            : Array.isArray(variant?.Sizes)
+              ? variant.Sizes
+              : variant?.size || variant?.Size
+                ? [variant]
+                : [];
+
+        return variantSizes
+          .map((sizeItem) => ({
+            id:
+              sizeItem?.id ??
+              sizeItem?.Id ??
+              null,
+            productVariantId:
+              sizeItem?.id ??
+              sizeItem?.Id ??
+              variant?.id ??
+              variant?.Id ??
+              null,
+            variantId:
+              sizeItem?.id ??
+              sizeItem?.Id ??
+              variant?.id ??
+              variant?.Id ??
+              null,
+            ageGroup:
+              sizeItem?.ageGroup ??
+              sizeItem?.AgeGroup ??
+              ageGroup,
+            size:
+              sizeItem?.size ??
+              sizeItem?.Size ??
+              sizeItem?.name ??
+              sizeItem?.Name ??
+              sizeItem?.value ??
+              sizeItem?.Value ??
+              "",
+            stock: Number(
+              sizeItem?.stock ??
+              sizeItem?.Stock ??
+              0
+            ),
+          }))
+          .filter((sizeItem) => sizeItem.size);
+      })
+    : Array.isArray(product?.sizes)
+      ? product.sizes
+      : Array.isArray(product?.Sizes)
+        ? product.Sizes
+        : [];
+
+  const image =
+    product?.imageUrl ??
+    product?.imagePath ??
+    product?.image ??
+    product?.thumbnail ??
+    "";
+
+  return {
+    ...product,
+
+    id: product?.id ?? product?.Id,
+    categoryId:
+      product?.categoryId ??
+      product?.CategoryId ??
+      product?.category?.id ??
+      product?.category?.Id ??
+      null,
+
+    category:
+      product?.categoryName ??
+      product?.CategoryName ??
+      product?.category?.name ??
+      product?.category?.Name ??
+      (typeof product?.category === "string"
+        ? product.category
+        : ""),
+    subCategoryId:
+      product?.subCategoryId ??
+      product?.SubCategoryId ??
+      product?.subCategory?.id ??
+      product?.subCategory?.Id ??
+      null,
+
+    subCategory:
+      product?.subCategoryName ??
+      product?.SubCategoryName ??
+      product?.subCategory?.name ??
+      product?.subCategory?.Name ??
+      (typeof product?.subCategory === "string"
+        ? product.subCategory
+        : ""),
+    image: normalizeImageUrl(image),
+
+    images: Array.isArray(product?.images)
+      ? product.images.map((item) => {
+          if (typeof item === "string") {
+            return normalizeImageUrl(item);
+          }
+
+          return normalizeImageUrl(
+            item?.imageUrl ??
+              item?.imagePath ??
+              item?.image ??
+              ""
+          );
+        })
+      : [],
+
+    price: Number(product?.price ?? product?.Price ?? 0),
+
+    originalPrice:
+      product?.originalPrice != null
+        ? Number(product.originalPrice)
+        : product?.OriginalPrice != null
+          ? Number(product.OriginalPrice)
+          : null,
+
+    stock: Number(
+      product?.stock ??
+      product?.Stock ??
+      0
+    ),
+
+    gender:
+      product?.gender ??
+      product?.Gender ??
+      null,
+
+    age:
+      product?.age ??
+      product?.Age ??
+      null,
+
+    bestSeller: Boolean(
+      product?.bestSeller ??
+      product?.BestSeller ??
+      false
+    ),
+
+    newArrival: Boolean(
+      product?.newArrival ??
+      product?.NewArrival ??
+      false
+    ),
+
+    deleted: Boolean(
+      product?.deleted ??
+      product?.Deleted ??
+      false
+    ),
+
+    sizes,
+  };
+};
 
 function ProductPage() {
   const { category } = useParams();
+
   const navigate = useNavigate();
+
   const dispatch = useDispatch();
 
   const [searchParams] = useSearchParams();
 
   const selectedSubCategory =
     searchParams.get("subCategory");
-
-  // STATES
 
   const [sortOption, setSortOption] =
     useState("default");
@@ -49,14 +355,7 @@ function ProductPage() {
   const [openFilter, setOpenFilter] =
     useState("");
 
-  const [selectedSubCategories, setSelectedSubCategories] =
-    useState(
-      selectedSubCategory
-        ? [selectedSubCategory]
-        : []
-    );
-
-  const [selectedSizes, setSelectedSizes] =
+  const [selectedAges, setSelectedAges] =
     useState([]);
 
   const [selectedGenders, setSelectedGenders] =
@@ -64,51 +363,6 @@ function ProductPage() {
 
   const [selectedPriceRange, setSelectedPriceRange] =
     useState("");
-
-  const [selectedStock, setSelectedStock] =
-    useState("");
-
-  // CATEGORY-SPECIFIC FILTERS
-
-  const clothingCategories = [
-    "Girls",
-    "Boys",
-  ];
-
-  const footwearCategory = "Footwear";
-
-  const clothingAgeGroups = [
-    "0–2 Years",
-    "2–4 Years",
-    "4–6 Years",
-    "6–8 Years",
-    "8–10 Years",
-  ];
-
-  // Simplified footwear age groups
-  const footwearAgeGroups = [
-    "0–2 Years",
-    "2–5 Years",
-    "5–8 Years",
-    "8–10 Years",
-  ];
-
-  // Used for URL/query detection before the current category is known
-  const allAgeGroups = [
-    ...clothingAgeGroups,
-    ...footwearAgeGroups,
-  ];
-
-  const genderFilterCategories = [
-    "Footwear",
-    "Kids Accessories",
-    "School Supplies",
-  ];
-
-  const [selectedAge, setSelectedAge] =
-    useState("");
-
-  // SIZE POPUP
 
   const [showSizePopup, setShowSizePopup] =
     useState(false);
@@ -121,104 +375,85 @@ function ProductPage() {
 
   const addingCartRef = useRef(false);
 
-  // WISHLIST
-
   const wishlistItems = useSelector(
     (state) =>
       state.wishlist?.items || []
   );
 
-  // CURRENT CATEGORY
+  const {
+    data: backendCategories = [],
+    isLoading: categoriesLoading,
+    isError: categoriesError,
+    error: categoriesQueryError,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const response = await api.get("/categories");
+      const result = normalizeCategoryResponse(response.data);
 
-  const currentCategory =
-    categories.find(
-      (item) =>
-        item.name.toLowerCase() ===
-        String(category || "").toLowerCase()
-    );
+      if (result.length === 0) {
+        throw new Error(
+          "No categories were returned from the backend."
+        );
+      }
 
-  const categorySubCategories =
-    currentCategory?.subCategories || [];
+      return result;
+    },
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
 
-  // LOAD WISHLIST
+  const currentCategory = backendCategories.find(
+    (item) =>
+      normalizeCategoryKey(item.name) ===
+      normalizeCategoryKey(category)
+  );
 
   useEffect(() => {
     const loadWishlist = async () => {
-      const user = JSON.parse(
-        localStorage.getItem("user")
-      );
+      const token =
+        localStorage.getItem("token");
 
-      if (!user) {
+      if (!token) {
         dispatch(setWishlist([]));
         return;
       }
 
-      try {
-        const response = await api.get(
-          `/wishlist?userId=${user.id}`
-        );
+      dispatch(setWishlist([]));
 
-        const data = response.data;
+      try {
+        const response = await api.get("/wishlist");
+        const responseData = response.data;
+
+        const wishlistItems =
+          Array.isArray(
+            responseData?.data?.items
+          )
+            ? responseData.data.items
+            : [];
 
         dispatch(
-          setWishlist(data)
+          setWishlist(
+            wishlistItems
+          )
         );
       } catch (error) {
         console.error(
-          "Wishlist error:",
+          "Wishlist load error:",
           error
         );
+
+        dispatch(setWishlist([]));
       }
     };
 
     loadWishlist();
   }, [dispatch]);
 
-  // RESET FILTERS
-
   useEffect(() => {
-    const queryValue =
-      selectedSubCategory || "";
-
-    const normalizedCurrentCategory =
-      String(category || "").toLowerCase();
-
-    const isAgeQuery = allAgeGroups.includes(
-      queryValue
-    );
-
-    const isGenderQuery =
-      genderFilterCategories.some(
-        (item) =>
-          item.toLowerCase() ===
-          normalizedCurrentCategory
-      ) &&
-      (queryValue === "Boys" ||
-        queryValue === "Girls");
-
-    setSelectedSubCategories(
-      queryValue &&
-        !isAgeQuery &&
-        !isGenderQuery
-        ? [queryValue]
-        : []
-    );
-
-    setSelectedAge(
-      isAgeQuery
-        ? queryValue
-        : ""
-    );
-
-    setSelectedGenders(
-      isGenderQuery
-        ? [queryValue]
-        : []
-    );
-
-    setSelectedSizes([]);
+    setSelectedAges([]);
+    setSelectedGenders([]);
     setSelectedPriceRange("");
-    setSelectedStock("");
     setSortOption("default");
     setOpenFilter("");
   }, [
@@ -226,43 +461,84 @@ function ProductPage() {
     selectedSubCategory,
   ]);
 
-  // LOAD PRODUCTS
-
   const {
     data: products = [],
-    isLoading,
-    isError,
-    error,
+    isLoading: productsLoading,
+    isError: productsError,
+    error: productsQueryError,
   } = useQuery({
-    queryKey: ["products"],
+    queryKey: [
+      "products",
+      currentCategory?.id ?? null,
+      category,
+    ],
 
     queryFn: async () => {
-      const response = await api.get("/products");
+      if (!currentCategory?.id) {
+        return [];
+      }
 
-      return response.data;
+      const response = await api.get(
+        `/products/category/${currentCategory.id}`
+      );
+
+      const responseData = response.data;
+      const root =
+        responseData?.data ??
+        responseData ??
+        [];
+
+      let productList = [];
+
+      if (Array.isArray(root)) {
+        productList = root;
+      } else if (root && typeof root === "object") {
+        productList =
+          root.products ??
+          root.Products ??
+          root.data ??
+          root.Data ??
+          [];
+      }
+
+      if (!Array.isArray(productList)) {
+        return [];
+      }
+
+      return productList.map(normalizeProduct);
     },
 
-    enabled: Boolean(category),
+    enabled: Boolean(currentCategory?.id),
   });
 
-  // VISIBLE PRODUCTS
+  const isLoading =
+    categoriesLoading ||
+    productsLoading;
+
+  const isError =
+    categoriesError ||
+    productsError;
+
+  const error =
+    categoriesQueryError ||
+    productsQueryError;
 
   const visibleProducts =
     products.filter(
       (product) =>
-        product.deleted !== true &&
-        String(product.category || "").toLowerCase() ===
-          String(category || "").toLowerCase()
+        product.deleted !== true
     );
-
-  // HELPERS
-
   const getSizeValue = (size) => {
     if (
       typeof size === "object" &&
       size !== null
     ) {
-      return size.size;
+      return (
+        size.size ??
+        size.name ??
+        size.value ??
+        ""
+      );
     }
 
     return size;
@@ -274,7 +550,7 @@ function ProductPage() {
       size !== null
     ) {
       return Number(
-        size.stock || 0
+        size.stock ?? 0
       );
     }
 
@@ -283,9 +559,7 @@ function ProductPage() {
 
   const hasSizes = (product) => {
     return (
-      Array.isArray(
-        product.sizes
-      ) &&
+      Array.isArray(product.sizes) &&
       product.sizes.length > 0
     );
   };
@@ -293,6 +567,7 @@ function ProductPage() {
   const getProductStock = (
     product
   ) => {
+    
     if (hasSizes(product)) {
       return product.sizes.reduce(
         (total, size) =>
@@ -307,84 +582,42 @@ function ProductPage() {
     );
   };
 
-  // CATEGORY FEATURES
-
-  const normalizedCategory = String(
-    category || ""
-  ).toLowerCase();
-
-  const isClothingCategory =
-    clothingCategories.some(
-      (item) =>
-        item.toLowerCase() ===
-        normalizedCategory
-    );
-
-  const isFootwearCategory =
-    normalizedCategory ===
-    footwearCategory.toLowerCase();
-
   const categoryHasGender =
-    genderFilterCategories.some(
-      (item) =>
-        item.toLowerCase() ===
-        normalizedCategory
-    ) &&
     visibleProducts.some(
-      (product) =>
-        product.gender
+      (product) => product.gender
     );
 
-  // Clothing keeps the original age groups.
-  // Footwear uses fewer age groups to keep the filter simple.
-  const ageGroups =
-    isFootwearCategory
-      ? footwearAgeGroups
-      : clothingAgeGroups;
+  const getProductAges = (product) => {
+    const variantAges = Array.isArray(product?.sizes)
+      ? product.sizes
+          .map((item) => {
+            if (!item || typeof item !== "object") return "";
+            return item.ageGroup ?? item.AgeGroup ?? item.age ?? item.Age ?? "";
+          })
+          .filter(Boolean)
+      : [];
 
-  const showAgeFilter =
-    isClothingCategory ||
-    isFootwearCategory;
+    if (product?.age) {
+      variantAges.push(product.age);
+    }
 
-  const showSizeFilter =
-    isFootwearCategory;
+    return [...new Set(
+      variantAges
+        .map((age) => String(age).trim())
+        .filter(Boolean)
+    )];
+  };
 
-  // AVAILABLE SIZES
-
-  // Footwear uses EU sizes 16–35.
-  const footwearSizes = Array.from(
-    { length: 20 },
-    (_, index) => String(index + 16)
+  const availableAges = AGE_FILTER_OPTIONS.filter((ageOption) =>
+    visibleProducts.some((product) =>
+      getProductAges(product).some(
+        (productAge) =>
+          normalizeAgeLabel(productAge) === normalizeAgeLabel(ageOption)
+      )
+    )
   );
 
-  const availableSizes = isFootwearCategory
-    ? footwearSizes
-    : [
-        ...new Set(
-          visibleProducts.flatMap((product) => {
-            if (!Array.isArray(product.sizes)) {
-              return [];
-            }
-
-            return product.sizes
-              .map(getSizeValue)
-              .filter(Boolean)
-              .map((size) => String(size));
-          })
-        ),
-      ].sort((a, b) => {
-        const numA = Number(a);
-        const numB = Number(b);
-
-        if (!Number.isNaN(numA) && !Number.isNaN(numB)) {
-          return numA - numB;
-        }
-
-        return String(a).localeCompare(String(b));
-      });
-
-  // AVAILABLE GENDERS
-
+  const categoryHasAges = availableAges.length > 0;
 
   const availableGenders = [
     ...new Set(
@@ -396,8 +629,6 @@ function ProductPage() {
         .filter(Boolean)
     ),
   ];
-
-  // PRICE CHECK
 
   const checkPriceRange = (
     product
@@ -447,138 +678,54 @@ function ProductPage() {
     return true;
   };
 
-  // STOCK CHECK
-
-  const checkStock = (
-    product
-  ) => {
-    if (!selectedStock) {
-      return true;
-    }
-
-    const stock = getProductStock(product);
-
-    const hasLowStockSize =
-      hasSizes(product) &&
-      product.sizes.some((size) => {
-        const sizeStock = getSizeStock(size);
-
-        return (
-          sizeStock > 0 &&
-          sizeStock < 5
-        );
-      });
-
-    if (selectedStock === "inStock") {
-      return stock > 0;
-    }
-
-    // LOW STOCK = 1, 2, 3, 4
-
-    if (selectedStock === "lowStock") {
-      return hasSizes(product)
-        ? hasLowStockSize
-        : stock > 0 && stock < 5;
-    }
-
-    return true;
-  };
-
-  // FILTER PRODUCTS
-
   const filteredProducts =
     visibleProducts
       .filter((product) => {
 
-        // AGE - GIRLS / BOYS / FOOTWEAR
-        // A product can belong to one or multiple age groups.
-
-        if (
-          (isClothingCategory || isFootwearCategory) &&
-          selectedAge
-        ) {
-          const productAges = Array.isArray(product.age)
-            ? product.age
-            : [product.age];
-
-          if (!productAges.includes(selectedAge)) {
-            return false;
-          }
-        }
-
-        // SUBCATEGORY
-
-        if (
-          selectedSubCategories.length >
-          0
-        ) {
+        if (selectedSubCategory) {
           if (
-            !selectedSubCategories.includes(
-              product.subCategory
-            )
+            normalizeCategoryKey(product.subCategory) !==
+            normalizeCategoryKey(selectedSubCategory)
           ) {
             return false;
           }
         }
+        if (selectedAges.length > 0) {
+          const productAges = getProductAges(product).map(normalizeAgeLabel);
 
-        // SIZE - FOOTWEAR
+          const matchingAge = selectedAges.some((age) =>
+            productAges.includes(normalizeAgeLabel(age))
+          );
 
-        if (
-          isFootwearCategory &&
-          selectedSizes.length >
-          0
-        ) {
-          const productSizes =
-            Array.isArray(
-              product.sizes
-            )
-              ? product.sizes.map(
-                  getSizeValue
-                )
-              : [];
-
-          const matchingSize =
-            selectedSizes.some(
-              (size) =>
-                productSizes.includes(
-                  String(size)
-                )
-            );
-
-          if (!matchingSize) {
+          if (!matchingAge) {
             return false;
           }
         }
-
-        // GENDER
 
         if (
           selectedGenders.length >
           0
         ) {
-          if (
-            !selectedGenders.includes(
-              product.gender
-            )
-          ) {
+          const genderMatch =
+            selectedGenders.some(
+              (gender) =>
+                String(
+                  gender
+                ).toLowerCase() ===
+                String(
+                  product.gender
+                ).toLowerCase()
+            );
+
+          if (!genderMatch) {
             return false;
           }
         }
-
-        // PRICE
 
         if (
           !checkPriceRange(
             product
           )
-        ) {
-          return false;
-        }
-
-        // STOCK
-
-        if (
-          !checkStock(product)
         ) {
           return false;
         }
@@ -618,10 +765,6 @@ function ProductPage() {
         return 0;
       });
 
-  // =====================================================
-  // DROPDOWN
-  // =====================================================
-
   const toggleDropdown = (
     name
   ) => {
@@ -633,45 +776,13 @@ function ProductPage() {
     );
   };
 
-  // SUBCATEGORY
-
-  const toggleSubCategory = (
-    value
-  ) => {
-    setSelectedSubCategories(
-      (previous) =>
-        previous.includes(value)
-          ? previous.filter(
-              (item) =>
-                item !== value
-            )
-          : [
-              ...previous,
-              value,
-            ]
+  const toggleAge = (value) => {
+    setSelectedAges((previous) =>
+      previous.includes(value)
+        ? previous.filter((item) => item !== value)
+        : [...previous, value]
     );
   };
-
-  // SIZE
-
-  const toggleSize = (
-    value
-  ) => {
-    setSelectedSizes(
-      (previous) =>
-        previous.includes(value)
-          ? previous.filter(
-              (item) =>
-                item !== value
-            )
-          : [
-              ...previous,
-              value,
-            ]
-    );
-  };
-
-  // GENDER
 
   const toggleGender = (
     value
@@ -690,41 +801,27 @@ function ProductPage() {
     );
   };
 
-  // CLEAR FILTERS
-
   const clearFilters = () => {
-    setSelectedSubCategories([]);
-    setSelectedAge("");
-    setSelectedSizes([]);
+    setSelectedAges([]);
     setSelectedGenders([]);
     setSelectedPriceRange("");
-    setSelectedStock("");
+    setSortOption("default");
+    setOpenFilter("");
   };
 
-  // FILTER COUNT
-
   const activeFilterCount =
-    selectedSubCategories.length +
-    (selectedAge ? 1 : 0) +
-    selectedSizes.length +
+    selectedAges.length +
     selectedGenders.length +
-    (selectedPriceRange
-      ? 1
-      : 0) +
-    (selectedStock
-      ? 1
-      : 0);
-
-  // WISHLIST
+    (selectedPriceRange ? 1 : 0) +
+    (sortOption !== "default" ? 1 : 0);
 
   const handleWishlist = async (
     product
   ) => {
-    const user = JSON.parse(
-      localStorage.getItem("user")
-    );
+    const token =
+      localStorage.getItem("token");
 
-    if (!user) {
+    if (!token) {
       toast.error(
         "Please login first"
       );
@@ -744,16 +841,14 @@ function ProductPage() {
       );
 
     try {
-      if (existing) {
-        await api.delete(
-          `/wishlist/${existing.id}`
-        );
 
-        dispatch(
+      if (existing) {
+        
+        await dispatch(
           removeFromWishlist(
-            existing.id
+            product.id
           )
-        );
+        ).unwrap();
 
         toast.success(
           "Removed from wishlist"
@@ -761,25 +856,12 @@ function ProductPage() {
 
         return;
       }
-
-      const wishlistItem = {
-        ...product,
-        productId:
-          product.id,
-        userId:
-          user.id,
-      };
-
-      const response = await api.post(
-        "/wishlist",
-        wishlistItem
-      );
-
-      const savedItem = response.data;
-
-      dispatch(
-        addToWishlist(savedItem)
-      );
+     
+      await dispatch(
+        addToWishlist(
+          product
+        )
+      ).unwrap();
 
       toast.success(
         "Added to wishlist"
@@ -791,12 +873,13 @@ function ProductPage() {
       );
 
       toast.error(
-        "Wishlist update failed"
+        typeof error === "string"
+          ? error
+          : error?.message ||
+            "Wishlist update failed"
       );
     }
   };
-
-  // ADD TO CART
 
   const addProductToCart = async (
     product,
@@ -813,50 +896,64 @@ function ProductPage() {
       true;
 
     try {
-      const response = await api.get(
-        `/cart?userId=${user.id}`
-      );
 
-      const cartItems = response.data;
+      const response =
+        await api.get("/cart");
+
+      const responseData =
+        response.data;
+
+      const cartItems =
+        Array.isArray(responseData?.data?.items)
+          ? responseData.data.items
+          : Array.isArray(responseData?.items)
+            ? responseData.items
+            : Array.isArray(responseData?.data)
+              ? responseData.data
+              : Array.isArray(responseData)
+                ? responseData
+                : [];
 
       const existingItem =
-        cartItems.find(
-          (item) => {
+        Array.isArray(cartItems)
+          ? cartItems.find(
+              (item) => {
 
-            const existingProductId =
-              String(
-                item.productId ??
-                  ""
-              );
+                const existingProductId =
+                  String(
+                    item.productId ??
+                      item.product?.id ??
+                      ""
+                  );
 
-            const existingSize =
-              String(
-                item.selectedSize ||
-                  ""
-              );
+                const existingVariantId =
+                  item.productVariantId == null
+                    ? null
+                    : String(
+                        item.productVariantId
+                      );
 
-            const existingUserId =
-              String(
-                item.userId ??
-                  ""
-              );
+                const selectedVariantId =
+                  productVariantIdFromProduct(
+                    product,
+                    size
+                  );
 
-            return (
-              existingProductId ===
-                String(
-                  product.id
-                ) &&
-              existingSize ===
-                String(
-                  size || ""
-                ) &&
-              existingUserId ===
-                String(
-                  user.id
-                )
-            );
-          }
-        );
+                return (
+                  existingProductId ===
+                    String(
+                      product.id
+                    ) &&
+                  (existingVariantId === null
+                    ? selectedVariantId == null
+                    : existingVariantId ===
+                      String(
+                        selectedVariantId
+                      ))
+                );
+              }
+            )
+          : null;
 
       if (existingItem) {
         toast.info(
@@ -866,30 +963,22 @@ function ProductPage() {
         return false;
       }
 
+      const productVariantId =
+        productVariantIdFromProduct(
+          product,
+          size
+        );
+
       const cartItem = {
         productId:
-          product.id,
+          Number(product.id),
 
-        userId:
-          user.id,
+        productVariantId:
+          productVariantId == null
+            ? null
+            : Number(productVariantId),
 
-        name:
-          product.name,
-
-        price:
-          product.price,
-
-        originalPrice:
-          product.originalPrice ||
-          null,
-
-        image:
-          product.image,
-
-        selectedSize:
-          size || null,
-
-        qty: 1,
+        quantity: 1,
       };
 
       await api.post(
@@ -898,12 +987,29 @@ function ProductPage() {
       );
 
       const updatedResponse =
-        await api.get(
-          `/cart?userId=${user.id}`
-        );
+        await api.get("/cart");
+
+      const updatedData =
+        updatedResponse.data;
 
       const updatedCart =
-        updatedResponse.data;
+        Array.isArray(
+          updatedData?.data?.items
+        )
+          ? updatedData.data.items
+          : Array.isArray(
+              updatedData?.items
+            )
+            ? updatedData.items
+            : Array.isArray(
+                updatedData?.data
+              )
+              ? updatedData.data
+              : Array.isArray(
+                  updatedData
+                )
+                ? updatedData
+                : [];
 
       dispatch(
         setCart(updatedCart)
@@ -921,7 +1027,8 @@ function ProductPage() {
       );
 
       toast.error(
-        "Failed to add to cart"
+        error?.message ||
+          "Failed to add to cart"
       );
 
       return false;
@@ -931,7 +1038,35 @@ function ProductPage() {
     }
   };
 
-  // PLUS BUTTON
+  const productVariantIdFromProduct = (
+    product,
+    size
+  ) => {
+    if (
+      !size ||
+      !Array.isArray(
+        product?.sizes
+      )
+    ) {
+      return null;
+    }
+
+    const matchingSize =
+      product.sizes.find(
+        (item) =>
+          String(
+            getSizeValue(item)
+          ) ===
+          String(size)
+      );
+
+    return (
+      matchingSize?.id ??
+      matchingSize?.variantId ??
+      matchingSize?.productVariantId ??
+      null
+    );
+  };
 
   const handlePlusClick = (
     product
@@ -946,10 +1081,13 @@ function ProductPage() {
       );
 
       navigate("/login");
+
       return;
     }
 
-    if (hasSizes(product)) {
+    if (
+      hasSizes(product)
+    ) {
       setSelectedProduct(
         product
       );
@@ -967,8 +1105,6 @@ function ProductPage() {
       user
     );
   };
-
-  // ADD SELECTED SIZE
 
   const handleAddSelectedToCart =
     async () => {
@@ -995,6 +1131,7 @@ function ProductPage() {
         );
 
         navigate("/login");
+
         return;
       }
 
@@ -1030,13 +1167,9 @@ function ProductPage() {
         );
 
       if (added) {
-        setShowSizePopup(false);
-        setSelectedProduct(null);
-        setSelectedSize(null);
+        closePopup();
       }
     };
-
-  // BUY NOW
 
   const handleBuyNow =
     async () => {
@@ -1063,6 +1196,7 @@ function ProductPage() {
         );
 
         navigate("/login");
+
         return;
       }
 
@@ -1098,23 +1232,19 @@ function ProductPage() {
         );
 
       if (added) {
-        setShowSizePopup(false);
-        setSelectedProduct(null);
-        setSelectedSize(null);
+        closePopup();
 
         navigate("/cart");
       }
     };
 
-  // CLOSE POPUP
-
   const closePopup = () => {
     setShowSizePopup(false);
+
     setSelectedProduct(null);
+
     setSelectedSize(null);
   };
-
-  // LOADING
 
   if (isLoading) {
     return (
@@ -1126,693 +1256,43 @@ function ProductPage() {
     );
   }
 
-  // ERROR
-
   if (isError) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-white">
-
-        <p className="text-red-500 font-semibold">
+        <p className="text-[#5A4030] font-semibold">
           Failed to load products
         </p>
 
         <p className="text-gray-500 mt-2">
           {error?.message}
         </p>
-
       </div>
     );
   }
-
-  // UI
 
   return (
     <div className="min-h-screen bg-white">
 
       <div className="px-4 md:px-8 lg:px-12 py-8">
 
-        {/* PAGE HEADER */}
-
-        <div className="mb-6">
-
-          <h1 className="text-3xl md:text-4xl font-bold capitalize">
-            {category}
-          </h1>
-
-          {selectedSubCategory && (
-            <p className="text-gray-500 mt-1">
-              {selectedSubCategory}
-            </p>
-          )}
-
-        </div>
-
-        {/* FILTER BAR */}
-
-        <div className="flex items-center gap-3 flex-wrap pb-5">
-
-          {/* FILTERS */}
-
+        <div className="flex justify-end pb-5">
           <button
             type="button"
             onClick={() => {
               setShowFilters(true);
               setOpenFilter("");
             }}
-            className="flex items-center gap-2 px-5 py-3 rounded-full border border-gray-300 bg-white hover:border-gray-500 transition font-medium"
+            className="flex items-center gap-2 px-5 py-3 rounded-full border border-[#E7DED5] bg-white hover:border-[#6B4F3A] transition font-medium"
           >
-
             <FaSlidersH />
-
-            Filters
-
+            <span>Filter &amp; Sort</span>
             {activeFilterCount > 0 && (
-              <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">
+              <span className="w-5 h-5 rounded-full bg-[#5A4030] text-white text-xs flex items-center justify-center">
                 {activeFilterCount}
               </span>
             )}
-
           </button>
-
-          {/* CATEGORY */}
-
-          <div className="relative">
-
-            <button
-              type="button"
-              onClick={() =>
-                toggleDropdown("Category")
-              }
-              className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                selectedSubCategories.length > 0
-                  ? "border-orange-500 text-orange-600"
-                  : "border-gray-300 hover:border-gray-500"
-              }`}
-            >
-              Category
-
-              <FaChevronDown className="text-xs" />
-
-            </button>
-
-            {openFilter === "Category" && (
-
-              <div className="absolute left-0 top-[55px] z-[999] w-56 bg-white border border-gray-200 shadow-xl">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedSubCategories([]);
-                    setOpenFilter("");
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedSubCategories.length === 0
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  All
-                </button>
-
-                {categorySubCategories.map((subCategory) => (
-                  <button
-                    key={subCategory}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSubCategories([subCategory]);
-                      setOpenFilter("");
-                    }}
-                    className={`w-full text-left px-5 py-3 text-sm ${
-                      selectedSubCategories.includes(subCategory)
-                        ? "bg-gray-500 text-white"
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    {subCategory}
-                  </button>
-                ))}
-
-              </div>
-
-            )}
-
-          </div>
-
-          {/* RELEVANCE */}
-
-          <div className="relative">
-
-            <button
-              type="button"
-              onClick={() =>
-                toggleDropdown(
-                  "Relevance"
-                )
-              }
-              className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                sortOption !== "default"
-                  ? "border-orange-500 text-orange-600"
-                  : "border-gray-300 hover:border-gray-500"
-              }`}
-            >
-
-              {sortOption ===
-              "default"
-                ? "Relevance"
-                : sortOption ===
-                  "lowToHigh"
-                ? "Lowest Price"
-                : "Highest Price"}
-
-              <FaChevronDown className="text-xs" />
-
-            </button>
-
-            {openFilter ===
-              "Relevance" && (
-
-              <div className="absolute left-0 top-[55px] z-[999] w-48 bg-white border border-gray-200 shadow-xl">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortOption(
-                      "default"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    sortOption ===
-                    "default"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Relevance
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortOption(
-                      "lowToHigh"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    sortOption ===
-                    "lowToHigh"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Lowest Price
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortOption(
-                      "highToLow"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    sortOption ===
-                    "highToLow"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Highest Price
-                </button>
-
-              </div>
-            )}
-
-          </div>
-
-          {/* GENDER */}
-
-          {categoryHasGender && (
-
-            <div className="relative">
-
-              <button
-                type="button"
-                onClick={() =>
-                  toggleDropdown(
-                    "Gender"
-                  )
-                }
-                className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                  selectedGenders.length
-                    ? "border-orange-500 text-orange-600"
-                    : "border-gray-300 hover:border-gray-500"
-                }`}
-              >
-
-                {selectedGenders.length ===
-                1
-                  ? selectedGenders[0]
-                  : "Gender"}
-
-                <FaChevronDown className="text-xs" />
-
-              </button>
-
-              {openFilter ===
-                "Gender" && (
-
-                <div className="absolute left-0 top-[55px] z-[999] min-w-[170px] bg-white border border-gray-200 shadow-xl">
-
-                  {availableGenders.map(
-                    (gender) => (
-
-                      <button
-                        key={
-                          gender
-                        }
-                        type="button"
-                        onClick={() => {
-                          toggleGender(
-                            gender
-                          );
-                          setOpenFilter(
-                            ""
-                          );
-                        }}
-                        className={`w-full text-left px-5 py-3 text-sm ${
-                          selectedGenders.includes(
-                            gender
-                          )
-                            ? "bg-gray-500 text-white"
-                            : "hover:bg-gray-100"
-                        }`}
-                      >
-                        {gender}
-                      </button>
-
-                    )
-                  )}
-
-                  {selectedGenders.length >
-                    0 && (
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedGenders(
-                          []
-                        );
-                        setOpenFilter(
-                          ""
-                        );
-                      }}
-                      className="w-full text-left px-5 py-3 text-sm text-orange-600 border-t hover:bg-gray-50"
-                    >
-                      Clear
-                    </button>
-
-                  )}
-
-                </div>
-
-              )}
-
-            </div>
-
-          )}
-
-          {/* AGE / SIZE */}
-
-          {(showAgeFilter || showSizeFilter) && (
-
-            <div className="relative">
-
-              <button
-                type="button"
-                onClick={() =>
-                  toggleDropdown(
-                    showAgeFilter ? "Age" : "Size"
-                  )
-                }
-                className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                  (showAgeFilter
-                    ? selectedAge
-                    : selectedSizes.length > 0)
-                    ? "border-orange-500 text-orange-600"
-                    : "border-gray-300 hover:border-gray-500"
-                }`}
-              >
-                {showAgeFilter
-                  ? selectedAge || "Age"
-                  : selectedSizes.length === 1
-                  ? selectedSizes[0]
-                  : "Size"}
-
-                <FaChevronDown className="text-xs" />
-              </button>
-
-              {/* AGE DROPDOWN */}
-
-              {showAgeFilter && openFilter === "Age" && (
-                <div className="absolute left-0 top-[55px] z-[999] min-w-[180px] bg-white border border-gray-200 shadow-xl">
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedAge("");
-                      setOpenFilter("");
-                    }}
-                    className={`w-full text-left px-5 py-3 text-sm ${
-                      !selectedAge
-                        ? "bg-gray-500 text-white"
-                        : "hover:bg-gray-100"
-                    }`}
-                  >
-                    All Ages
-                  </button>
-
-                  {ageGroups.map((age) => (
-                    <button
-                      key={age}
-                      type="button"
-                      onClick={() => {
-                        setSelectedAge(age);
-                        setOpenFilter("");
-                      }}
-                      className={`w-full text-left px-5 py-3 text-sm ${
-                        selectedAge === age
-                          ? "bg-gray-500 text-white"
-                          : "hover:bg-gray-100"
-                      }`}
-                    >
-                      {age}
-                    </button>
-                  ))}
-
-                </div>
-              )}
-
-              {/* FOOTWEAR SIZE DROPDOWN */}
-
-              {showSizeFilter && openFilter === "Size" && (
-                <div className="absolute left-0 top-[55px] z-[999] min-w-[190px] bg-white border border-gray-200 shadow-xl p-2">
-
-                  {availableSizes.map((size) => (
-                    <label
-                      key={String(size)}
-                      className="flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSizes.includes(size)}
-                        onChange={() => toggleSize(size)}
-                        className="w-4 h-4 accent-orange-500"
-                      />
-
-                      <span className="text-sm">
-                        {size}
-                      </span>
-                    </label>
-                  ))}
-
-                  {selectedSizes.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedSizes([]);
-                        setOpenFilter("");
-                      }}
-                      className="w-full text-left px-3 py-2 text-sm text-orange-600 border-t mt-1"
-                    >
-                      Clear
-                    </button>
-                  )}
-
-                </div>
-              )}
-
-            </div>
-
-          )}
-
-          {/* PRICE RANGE */}
-
-          <div className="relative">
-
-            <button
-              type="button"
-              onClick={() =>
-                toggleDropdown(
-                  "Price"
-                )
-              }
-              className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                selectedPriceRange
-                  ? "border-orange-500 text-orange-600"
-                  : "border-gray-300 hover:border-gray-500"
-              }`}
-            >
-
-              {selectedPriceRange ===
-              "under500"
-                ? "Under ₹500"
-                : selectedPriceRange ===
-                  "500to1000"
-                ? "₹500–₹1000"
-                : selectedPriceRange ===
-                  "1000to2000"
-                ? "₹1000–₹2000"
-                : selectedPriceRange ===
-                  "above2000"
-                ? "Above ₹2000"
-                : "Price Range"}
-
-              <FaChevronDown className="text-xs" />
-
-            </button>
-
-            {openFilter ===
-              "Price" && (
-
-              <div className="absolute left-0 top-[55px] z-[999] w-52 bg-white border border-gray-200 shadow-xl">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPriceRange(
-                      "under500"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedPriceRange ===
-                    "under500"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Under ₹500
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPriceRange(
-                      "500to1000"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedPriceRange ===
-                    "500to1000"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  ₹500–₹1000
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPriceRange(
-                      "1000to2000"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedPriceRange ===
-                    "1000to2000"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  ₹1000–₹2000
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedPriceRange(
-                      "above2000"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedPriceRange ===
-                    "above2000"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Above ₹2000
-                </button>
-
-                {selectedPriceRange && (
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedPriceRange(
-                        ""
-                      );
-                      setOpenFilter(
-                        ""
-                      );
-                    }}
-                    className="w-full text-left px-5 py-3 text-sm text-orange-600 border-t"
-                  >
-                    Clear
-                  </button>
-
-                )}
-
-              </div>
-
-            )}
-
-          </div>
-
-          {/* AVAILABILITY */}
-
-          <div className="relative">
-
-            <button
-              type="button"
-              onClick={() =>
-                toggleDropdown(
-                  "Stock"
-                )
-              }
-              className={`px-5 py-3 rounded-full border bg-white flex items-center gap-3 transition font-medium ${
-                selectedStock
-                  ? "border-orange-500 text-orange-600"
-                  : "border-gray-300 hover:border-gray-500"
-              }`}
-            >
-
-              {selectedStock ===
-              "inStock"
-                ? "In Stock"
-                : selectedStock ===
-                  "lowStock"
-                ? "Low Stock"
-                : "Availability"}
-
-              <FaChevronDown className="text-xs" />
-
-            </button>
-
-            {openFilter ===
-              "Stock" && (
-
-              <div className="absolute left-0 top-[55px] z-[999] w-48 bg-white border border-gray-200 shadow-xl">
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedStock(
-                      "inStock"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedStock ===
-                    "inStock"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  In Stock
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedStock(
-                      "lowStock"
-                    );
-                    setOpenFilter(
-                      ""
-                    );
-                  }}
-                  className={`w-full text-left px-5 py-3 text-sm ${
-                    selectedStock ===
-                    "lowStock"
-                      ? "bg-gray-500 text-white"
-                      : "hover:bg-gray-100"
-                  }`}
-                >
-                  Low Stock
-                </button>
-
-                {selectedStock && (
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedStock(
-                        ""
-                      );
-                      setOpenFilter(
-                        ""
-                      );
-                    }}
-                    className="w-full text-left px-5 py-3 text-sm text-orange-600 border-t"
-                  >
-                    Clear
-                  </button>
-
-                )}
-
-              </div>
-
-            )}
-
-          </div>
-
         </div>
-
-        {/* PRODUCT COUNT */}
 
         <div className="flex items-center justify-between mb-5">
 
@@ -1829,7 +1309,7 @@ function ProductPage() {
               onClick={
                 clearFilters
               }
-              className="text-sm text-orange-600 font-medium"
+              className="text-sm text-[#5A4030] font-medium"
             >
               Clear Filters
             </button>
@@ -1837,8 +1317,6 @@ function ProductPage() {
           )}
 
         </div>
-
-        {/* PRODUCTS */}
 
         {filteredProducts.length ===
         0 ? (
@@ -1865,14 +1343,22 @@ function ProductPage() {
                         wishlistItem.productId ??
                           wishlistItem.id
                       ) ===
-                      String(item.id)
+                      String(
+                        item.id
+                      )
                   );
 
                 const stock =
-                  getProductStock(item);
+                  getProductStock(
+                    item
+                  );
 
                 const isOutOfStock =
                   stock <= 0;
+
+                const isLowStock =
+                  stock > 0 &&
+                  stock < 5;
 
                 const price =
                   Number(
@@ -1893,8 +1379,6 @@ function ProductPage() {
                     className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-300"
                   >
 
-                    {/* IMAGE */}
-
                     <div
                       className="relative aspect-[4/5] overflow-hidden cursor-pointer group"
                       onClick={() =>
@@ -1904,31 +1388,43 @@ function ProductPage() {
                       }
                     >
 
-                      <img
-                        src={
-                          item.image
-                        }
-                        alt={
-                          item.name
-                        }
-                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                      />
+                      {item.image ? (
 
-                      {/* OUT OF STOCK */}
+                        <img
+                          src={
+                            item.image
+                          }
+                          alt={
+                            item.name
+                          }
+                          className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                          onError={(event) => {
+                            event.currentTarget.style.display =
+                              "none";
+                          }}
+                        />
 
-                      {isOutOfStock && (
+                      ) : (
 
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-
-                          <span className="bg-black text-white px-4 py-2 rounded-full text-xs font-semibold">
-                            OUT OF STOCK
-                          </span>
-
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                          No Image
                         </div>
 
                       )}
 
-                      {/* WISHLIST */}
+                      {isLowStock && (
+                        <div className="absolute top-3 left-3 bg-[#5A4030] text-white px-3 py-1 rounded-full text-[11px] font-semibold shadow z-10">
+                          LOW STOCK
+                        </div>
+                      )}
+
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <span className="bg-black text-white px-4 py-2 rounded-full text-xs font-semibold">
+                            OUT OF STOCK
+                          </span>
+                        </div>
+                      )}
 
                       <button
                         type="button"
@@ -1944,7 +1440,7 @@ function ProductPage() {
 
                         {isInWishlist ? (
 
-                          <FaHeart className="text-red-500" />
+                          <FaHeart className="text-[#5A4030]" />
 
                         ) : (
 
@@ -1954,10 +1450,7 @@ function ProductPage() {
 
                       </button>
 
-                      {/* PLUS */}
-
                       {!isOutOfStock && (
-
                         <button
                           type="button"
                           onClick={(event) => {
@@ -1971,29 +1464,22 @@ function ProductPage() {
                         >
                           +
                         </button>
-
                       )}
 
                     </div>
 
-                    {/* PRODUCT INFO */}
-
                     <div className="p-4">
 
                       {item.bestSeller && (
-
                         <p className="text-xs font-medium uppercase tracking-wide text-gray-500 mb-1">
                           Bestseller
                         </p>
-
                       )}
 
                       {item.newArrival && (
-
-                        <p className="text-xs font-medium uppercase tracking-wide text-orange-500 mb-1">
+                        <p className="text-xs font-medium uppercase tracking-wide text-[#5A4030] mb-1">
                           New Arrival
                         </p>
-
                       )}
 
                       <h2
@@ -2045,8 +1531,6 @@ function ProductPage() {
 
       </div>
 
-      {/* FILTER DRAWER */}
-
       {showFilters && (
 
         <div className="fixed inset-0 z-[9998]">
@@ -2058,14 +1542,12 @@ function ProductPage() {
             }
           />
 
-          <div className="absolute left-0 top-0 bottom-0 w-full max-w-[420px] bg-white shadow-2xl flex flex-col">
-
-            {/* DRAWER HEADER */}
+          <div className="absolute right-0 top-0 bottom-0 w-full max-w-[420px] bg-white shadow-2xl flex flex-col">
 
             <div className="flex items-center justify-between px-5 py-5 border-b">
 
               <h2 className="text-xl font-semibold">
-                Filters
+                Filter &amp; Sort
               </h2>
 
               <button
@@ -2084,82 +1566,42 @@ function ProductPage() {
 
             <div className="flex-1 overflow-y-auto">
 
-              {/* SUBCATEGORY */}
+              <div className="border-b">
+                <button
+                  type="button"
+                  onClick={() => toggleDropdown("DrawerSort")}
+                  className="w-full px-5 py-5 flex items-center justify-between font-semibold"
+                >
+                  <span>Sort By</span>
+                  <FaChevronDown
+                    className={openFilter === "DrawerSort" ? "rotate-180" : ""}
+                  />
+                </button>
 
-              {categorySubCategories.length >
-                0 && (
-
-                <div className="border-b">
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleDropdown(
-                        "DrawerSubcategory"
-                      )
-                    }
-                    className="w-full px-5 py-5 flex items-center justify-between font-semibold"
-                  >
-
-                    <span>
-                      Category
-                    </span>
-
-                    <FaChevronDown
-                      className={
-                        openFilter ===
-                        "DrawerSubcategory"
-                          ? "rotate-180"
-                          : ""
-                      }
-                    />
-
-                  </button>
-
-                  {openFilter ===
-                    "DrawerSubcategory" && (
-
-                    <div className="px-5 pb-5 space-y-3">
-
-                      {categorySubCategories.map(
-                        (sub) => (
-
-                          <label
-                            key={sub}
-                            className="flex items-center justify-between cursor-pointer"
-                          >
-
-                            <span className="text-sm">
-                              {sub}
-                            </span>
-
-                            <input
-                              type="checkbox"
-                              checked={selectedSubCategories.includes(
-                                sub
-                              )}
-                              onChange={() =>
-                                toggleSubCategory(
-                                  sub
-                                )
-                              }
-                              className="w-4 h-4 accent-orange-500"
-                            />
-
-                          </label>
-
-                        )
-                      )}
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              )}
-
-              {/* GENDER */}
+                {openFilter === "DrawerSort" && (
+                  <div className="px-5 pb-5 space-y-3">
+                    {[
+                      ["default", "Relevance"],
+                      ["lowToHigh", "Price: Low to High"],
+                      ["highToLow", "Price: High to Low"],
+                    ].map(([value, label]) => (
+                      <label
+                        key={value}
+                        className="flex items-center justify-between cursor-pointer"
+                      >
+                        <span className="text-sm">{label}</span>
+                        <input
+                          type="radio"
+                          name="drawer-sort"
+                          checked={sortOption === value}
+                          onChange={() => setSortOption(value)}
+                          className="w-4 h-4 accent-[#5A4030]"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {categoryHasGender && (
 
@@ -2199,9 +1641,7 @@ function ProductPage() {
                         (gender) => (
 
                           <label
-                            key={
-                              gender
-                            }
+                            key={gender}
                             className="flex items-center justify-between cursor-pointer"
                           >
 
@@ -2219,7 +1659,7 @@ function ProductPage() {
                                   gender
                                 )
                               }
-                              className="w-4 h-4 accent-orange-500"
+                              className="w-4 h-4 accent-[#5A4030]"
                             />
 
                           </label>
@@ -2235,134 +1675,41 @@ function ProductPage() {
 
               )}
 
-              {/* AGE - GIRLS / BOYS */}
-
-              {showAgeFilter && (
-
+              {categoryHasAges && (
                 <div className="border-b">
-
                   <button
                     type="button"
                     onClick={() => toggleDropdown("DrawerAge")}
                     className="w-full px-5 py-5 flex items-center justify-between font-semibold"
                   >
                     <span>Age</span>
-
                     <FaChevronDown
                       className={
-                        openFilter === "DrawerAge"
-                          ? "rotate-180"
-                          : ""
+                        openFilter === "DrawerAge" ? "rotate-180" : ""
                       }
                     />
                   </button>
 
                   {openFilter === "DrawerAge" && (
                     <div className="px-5 pb-5 space-y-3">
-                      {ageGroups.map((age) => (
+                      {availableAges.map((age) => (
                         <label
                           key={age}
                           className="flex items-center justify-between cursor-pointer"
                         >
-                          <span>{age}</span>
-
+                          <span className="text-sm">{age}</span>
                           <input
-                            type="radio"
-                            name="drawer-age"
-                            checked={selectedAge === age}
-                            onChange={() => setSelectedAge(age)}
-                            className="w-4 h-4 accent-orange-500"
+                            type="checkbox"
+                            checked={selectedAges.includes(age)}
+                            onChange={() => toggleAge(age)}
+                            className="w-4 h-4 accent-[#5A4030]"
                           />
                         </label>
                       ))}
-
-                      {selectedAge && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedAge("")}
-                          className="text-sm text-orange-600"
-                        >
-                          Clear
-                        </button>
-                      )}
                     </div>
                   )}
-
                 </div>
               )}
-
-              {/* SIZE - FOOTWEAR */}
-
-              {showSizeFilter && (
-
-                <div className="border-b">
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      toggleDropdown(
-                        "DrawerSize"
-                      )
-                    }
-                    className="w-full px-5 py-5 flex items-center justify-between font-semibold"
-                  >
-
-                    <span>
-                      Size
-                    </span>
-
-                    <FaChevronDown
-                      className={
-                        openFilter ===
-                        "DrawerSize"
-                          ? "rotate-180"
-                          : ""
-                      }
-                    />
-
-                  </button>
-
-                  {openFilter ===
-                    "DrawerSize" && (
-
-                    <div className="px-5 pb-5 flex flex-wrap gap-3">
-
-                      {availableSizes.map(
-                        (size) => (
-
-                          <button
-                            key={String(
-                              size
-                            )}
-                            type="button"
-                            onClick={() =>
-                              toggleSize(
-                                size
-                              )
-                            }
-                            className={`px-4 py-2 rounded-lg border ${
-                              selectedSizes.includes(
-                                size
-                              )
-                                ? "bg-orange-500 text-white border-orange-500"
-                                : "bg-white border-gray-300"
-                            }`}
-                          >
-                            {size}
-                          </button>
-
-                        )
-                      )}
-
-                    </div>
-
-                  )}
-
-                </div>
-
-              )}
-
-              {/* PRICE */}
 
               <div className="border-b">
 
@@ -2420,9 +1767,7 @@ function ProductPage() {
                       ]) => (
 
                         <label
-                          key={
-                            value
-                          }
+                          key={value}
                           className="flex items-center justify-between cursor-pointer"
                         >
 
@@ -2442,93 +1787,7 @@ function ProductPage() {
                                 value
                               )
                             }
-                            className="w-4 h-4 accent-orange-500"
-                          />
-
-                        </label>
-
-                      )
-                    )}
-
-                  </div>
-
-                )}
-
-              </div>
-
-              {/* AVAILABILITY */}
-
-              <div className="border-b">
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    toggleDropdown(
-                      "DrawerStock"
-                    )
-                  }
-                  className="w-full px-5 py-5 flex items-center justify-between font-semibold"
-                >
-
-                  <span>
-                    Availability
-                  </span>
-
-                  <FaChevronDown
-                    className={
-                      openFilter ===
-                      "DrawerStock"
-                        ? "rotate-180"
-                        : ""
-                    }
-                  />
-
-                </button>
-
-                {openFilter ===
-                  "DrawerStock" && (
-
-                  <div className="px-5 pb-5 space-y-3">
-
-                    {[
-                      [
-                        "inStock",
-                        "In Stock",
-                      ],
-                      [
-                        "lowStock",
-                        "Low Stock",
-                      ],
-                    ].map(
-                      ([
-                        value,
-                        label,
-                      ]) => (
-
-                        <label
-                          key={
-                            value
-                          }
-                          className="flex items-center justify-between cursor-pointer"
-                        >
-
-                          <span>
-                            {label}
-                          </span>
-
-                          <input
-                            type="radio"
-                            name="drawer-stock"
-                            checked={
-                              selectedStock ===
-                              value
-                            }
-                            onChange={() =>
-                              setSelectedStock(
-                                value
-                              )
-                            }
-                            className="w-4 h-4 accent-orange-500"
+                            className="w-4 h-4 accent-[#5A4030]"
                           />
 
                         </label>
@@ -2543,8 +1802,6 @@ function ProductPage() {
               </div>
 
             </div>
-
-            {/* DRAWER FOOTER */}
 
             <div className="border-t p-4 flex gap-3">
 
@@ -2569,7 +1826,7 @@ function ProductPage() {
                     ""
                   );
                 }}
-                className="flex-1 h-12 rounded-full bg-[#ff6b00] text-white font-semibold"
+                className="flex-1 h-12 rounded-full bg-[#5A4030] text-white font-semibold"
               >
                 Apply Filters
               </button>
@@ -2581,8 +1838,6 @@ function ProductPage() {
         </div>
 
       )}
-
-      {/* SIZE POPUP */}
 
       {showSizePopup &&
         selectedProduct && (
@@ -2600,8 +1855,6 @@ function ProductPage() {
               event.stopPropagation()
             }
           >
-
-            {/* HEADER */}
 
             <div className="px-6 pt-5">
 
@@ -2625,23 +1878,31 @@ function ProductPage() {
 
             </div>
 
-            {/* PRODUCT */}
-
             <div className="px-6 py-5">
 
               <div className="flex gap-4">
 
                 <div className="w-24 h-28 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
 
-                  <img
-                    src={
-                      selectedProduct.image
-                    }
-                    alt={
-                      selectedProduct.name
-                    }
-                    className="w-full h-full object-cover"
-                  />
+                  {selectedProduct.image ? (
+
+                    <img
+                      src={
+                        selectedProduct.image
+                      }
+                      alt={
+                        selectedProduct.name
+                      }
+                      className="w-full h-full object-cover"
+                    />
+
+                  ) : (
+
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                      No Image
+                    </div>
+
+                  )}
 
                 </div>
 
@@ -2700,13 +1961,11 @@ function ProductPage() {
 
             </div>
 
-            {/* DELIVERY */}
-
             <div className="px-6">
 
               <div className="bg-gray-50 rounded-xl p-4 flex items-center gap-3">
 
-                <FaTruck className="text-orange-500" />
+                <FaTruck className="text-[#5A4030]" />
 
                 <span className="text-sm text-gray-600 flex-1">
                   Fast Delivery within
@@ -2718,8 +1977,6 @@ function ProductPage() {
               </div>
 
             </div>
-
-            {/* SIZE */}
 
             <div className="px-6 pt-6">
 
@@ -2746,7 +2003,8 @@ function ProductPage() {
                       );
 
                     const isOutOfStock =
-                      sizeStock <= 0;
+                      sizeStock <=
+                      0;
 
                     const isSelected =
                       String(
@@ -2771,12 +2029,12 @@ function ProductPage() {
                         }
                         className={`min-w-[70px] px-4 py-2.5 rounded-lg border text-sm font-medium ${
                           isSelected
-                            ? "bg-black text-white border-black"
+                            ? "bg-[#5A4030] text-white border-[#5A4030]"
                             : "bg-white text-gray-700 border-gray-300"
                         } ${
                           isOutOfStock
                             ? "opacity-40 line-through cursor-not-allowed"
-                            : "hover:border-black"
+                            : "hover:border-[#6B4F3A]"
                         }`}
                       >
                         {sizeValue}
@@ -2789,8 +2047,6 @@ function ProductPage() {
               </div>
 
             </div>
-
-            {/* BUTTONS */}
 
             <div className="px-6 py-6">
 
@@ -2811,7 +2067,7 @@ function ProductPage() {
                   onClick={
                     handleAddSelectedToCart
                   }
-                  className="flex-1 h-12 rounded-full bg-[#ff6b00] text-white font-semibold hover:bg-[#e85f00]"
+                  className="flex-1 h-12 rounded-full bg-[#5A4030] text-white font-semibold hover:bg-[#4A3326]"
                 >
                   Add to Bag
                 </button>
@@ -2825,6 +2081,30 @@ function ProductPage() {
         </div>
 
       )}
+
+      <ToastContainer
+        position="bottom-center"
+        autoClose={1800}
+        hideProgressBar
+        newestOnTop
+        closeButton={false}
+        closeOnClick
+        pauseOnHover={false}
+        draggable={false}
+        theme="light"
+        icon={false}
+        toastStyle={{
+          background: "#FFF9F3",
+          color: "#5A4030",
+          border: "1px solid #E7DED5",
+          borderRadius: "12px",
+          boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
+          fontSize: "14px",
+          fontWeight: 500,
+          minHeight: "42px",
+          padding: "10px 14px",
+        }}
+      />
 
     </div>
   );
