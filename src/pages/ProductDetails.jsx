@@ -1,659 +1,1420 @@
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-
-import {
-  removeFromCart,
-  updateQty,
-  clearCart,
-  setCart,
-} from "../redux/cartSlice";
-
-import { useNavigate } from "react-router-dom";
-
-import { useEffect, useState } from "react";
-
+import { addToCart } from "../redux/cartSlice";
 import { toast } from "react-toastify";
-
 import api from "../api/api";
 
-function Cart() {
-  // Supports image URLs returned in either camelCase or PascalCase by the API.
-  const getCartImage = (item) => {
-    const product = item?.product ?? item?.Product ?? item?.productDetails ?? item?.ProductDetails ?? {};
-    const variant = item?.productVariant ?? item?.ProductVariant ?? item?.variant ?? item?.Variant ?? {};
-
-    const candidates = [
-      item?.image,
-      item?.Image,
-      item?.imageUrl,
-      item?.ImageUrl,
-      item?.imageURL,
-      item?.ImageURL,
-      item?.productImage,
-      item?.ProductImage,
-      item?.productImageUrl,
-      item?.ProductImageUrl,
-      item?.imagePath,
-      item?.ImagePath,
-      product?.image,
-      product?.Image,
-      product?.imageUrl,
-      product?.ImageUrl,
-      product?.imageURL,
-      product?.ImageURL,
-      product?.productImageUrl,
-      product?.ProductImageUrl,
-      product?.imagePath,
-      product?.ImagePath,
-      product?.thumbnail,
-      product?.Thumbnail,
-      variant?.image,
-      variant?.Image,
-      variant?.imageUrl,
-      variant?.ImageUrl,
-      item?.images?.[0],
-      item?.Images?.[0],
-      product?.images?.[0],
-      product?.Images?.[0],
-      product?.productImages?.[0],
-      product?.ProductImages?.[0],
-    ];
-
-    let image = candidates.find((value) => {
-      if (typeof value === "string") return value.trim().length > 0;
-      if (value && typeof value === "object") {
-        return Boolean(value.url || value.Url || value.imageUrl || value.ImageUrl || value.path || value.Path);
-      }
-      return false;
-    });
-
-    if (image && typeof image === "object") {
-      image = image.url ?? image.Url ?? image.imageUrl ?? image.ImageUrl ?? image.path ?? image.Path;
-    }
-
-    if (typeof image !== "string" || !image.trim()) return "";
-    image = image.trim();
-
-    // Leave absolute URLs and data URLs unchanged. Resolve API-relative image paths.
-    if (/^(https?:)?\/\//i.test(image) || image.startsWith("data:")) {
-      return image.startsWith("//") ? `${window.location.protocol}${image}` : image;
-    }
-
-    const baseURL = api?.defaults?.baseURL;
-    if (image.startsWith("/")) {
-      if (baseURL) {
-        try {
-          const apiURL = new URL(baseURL, window.location.origin);
-          const serverRoot = `${apiURL.protocol}//${apiURL.host}`;
-          return `${serverRoot}${image}`;
-        } catch {
-          return image;
-        }
-      }
-      return image;
-    }
-
-    if (baseURL) {
-      try {
-        return new URL(image, `${baseURL.replace(/\/?$/, "/")}`).toString();
-      } catch {
-        return image;
-      }
-    }
-
-    return image;
-  };
-
-  const notify = (type, message) => {
-    toast[type](message, {
-      position: "bottom-center",
-      autoClose: 1800,
-      hideProgressBar: true,
-      closeButton: false,
-      icon: false,
-      style: {
-        background: "#FFF9F3",
-        color: "#5A4030",
-        border: "1px solid #E7DED5",
-        borderRadius: "12px",
-        boxShadow: "0 4px 16px rgba(90, 64, 48, 0.12)",
-        fontSize: "14px",
-        fontWeight: 500,
-      },
-    });
-  };
-  const dispatch = useDispatch();
+function ProductDetails() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  const { items, totalPrice } = useSelector(
+  const { items } = useSelector(
     (state) => state.cart
   );
 
-  const token = localStorage.getItem("token");
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [stockInfo, setStockInfo] = useState({});
-  const [updatingItems, setUpdatingItems] = useState({});
+  const [selectedSize, setSelectedSize] = useState("");
+  const [selectedAge, setSelectedAge] = useState("");
+  const [selectedImage, setSelectedImage] = useState("");
 
-  const getStockKey = (item) => {
-    return `${item.id}_${item.productVariantId ?? item.selectedSize ?? ""}`;
-  };
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
 
-  const getAvailableStock = (item) => {
-    const key = getStockKey(item);
+  const [reviews, setReviews] = useState([]);
+  const [rating, setRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
 
-    const stockFromState = stockInfo[key];
-
-    if (stockFromState !== undefined) {
-      return Number(stockFromState);
-    }
-
-    const stock =
-      item.availableStock ??
-      item.stock ??
-      item.Stock;
-
-    if (stock === undefined || stock === null) {
-      return undefined;
-    }
-
-    return Number(stock);
-  };
+  const user = JSON.parse(
+    localStorage.getItem("user") || "null"
+  );
 
   useEffect(() => {
-    const loadCart = async () => {
-      if (!token) {
-        dispatch(setCart([]));
-        return;
-      }
-
+    const fetchProduct = async () => {
       try {
-        const response = await api.get("/cart");
+        const response = await api.get(
+          `/products/${id}`
+        );
 
-        const cart =
-          response?.data?.data ??
-          response?.data;
+        const responseData = response.data;
+        const data = responseData?.data ?? responseData;
 
-        const cartItems = Array.isArray(cart?.items)
-          ? cart.items
+        const variants = Array.isArray(data?.variants)
+          ? data.variants
           : [];
 
-        const normalizedItems = cartItems.map((item) => {
-          const normalized = {
-            ...item,
+        const normalizedSizes = variants.flatMap((variant) => {
+          const ageGroup = variant?.ageGroup ?? variant?.AgeGroup ?? "";
+          const sizes = Array.isArray(variant?.sizes)
+            ? variant.sizes
+            : Array.isArray(variant?.Sizes)
+            ? variant.Sizes
+            : [];
 
-            id: item.id ?? item.Id,
+          return sizes.map((sizeItem) => ({
+            id: sizeItem?.id ?? sizeItem?.Id ?? null,
+            productVariantId: sizeItem?.id ?? sizeItem?.Id ?? null,
+            ageGroup,
+            size: sizeItem?.size ?? sizeItem?.Size ?? "",
+            stock: Number(sizeItem?.stock ?? sizeItem?.Stock ?? 0),
+          }));
+        }).filter((item) => item.size);
 
-            productId: item.productId ?? item.ProductId,
+        const ageGroups = [...new Set(
+          variants
+            .map((variant) => variant?.ageGroup ?? variant?.AgeGroup ?? "")
+            .filter(Boolean)
+        )];
 
-            productVariantId:
-              item.productVariantId ??
-              item.ProductVariantId ??
-              null,
+        const normalizedProduct = {
+          ...data,
+          image: data?.imageUrl ?? data?.image ?? "",
+          images: Array.isArray(data?.images) ? data.images : [],
+          category: data?.categoryName ?? data?.category?.name ?? data?.category ?? "",
+          subCategory: data?.subCategoryName ?? data?.subCategory?.name ?? data?.subCategory ?? "",
+          price: Number(data?.price ?? 0),
+          stock: Number(data?.stock ?? 0),
+          gender: data?.gender ?? null,
+          age: data?.age ?? ageGroups,
+          variants,
+          sizes: normalizedSizes,
+        };
 
-            name:
-              item.name ??
-              item.productName ??
-              item.ProductName ??
-              "",
+        setProduct(normalizedProduct);
+        setSelectedSize("");
+        setSelectedAge("");
 
-            image: getCartImage(item),
+        const firstImage =
+          data.image ||
+          (Array.isArray(data.images) && data.images.length > 0
+            ? data.images[0]
+            : "");
 
-            price:
-              Number(item.price ?? item.Price ?? 0),
+        setSelectedImage(firstImage);
 
-            qty:
-              Number(
-                item.qty ??
-                item.quantity ??
-                item.Quantity ??
-                1
-              ),
-
-            selectedSize:
-              item.selectedSize ??
-              item.size ??
-              item.Size ??
-              "",
-
-            availableStock:
-              item.availableStock ??
-              item.stock ??
-              item.Stock,
-          };
-
-          return normalized;
-        });
-
-        const newStockInfo = {};
-
-        normalizedItems.forEach((item) => {
-          const stock = item.availableStock;
-
-          if (stock !== undefined && stock !== null) {
-            newStockInfo[getStockKey(item)] = Number(stock);
-          }
-        });
-
-        setStockInfo(newStockInfo);
-
-        dispatch(setCart(normalizedItems));
+        setLoading(false);
       } catch (error) {
-        console.error("Load cart error:", error);
+        console.error(
+          "Product fetch error:",
+          error
+        );
 
-        const message =
-          error?.response?.data?.errors?.[0] ||
-          error?.response?.data?.message ||
-          "Failed to load cart.";
-
-        notify("error", message);
+        setLoading(false);
       }
     };
 
-    loadCart();
-  }, [dispatch, token]);
+    fetchProduct();
+  }, [id]);
 
-  const handleRemove = async (item) => {
-    if (!token) {
-      notify("error", "Please login first");
-      navigate("/login");
-      return;
-    }
+  const hasSizes =
+    Array.isArray(product?.sizes) &&
+    product.sizes.length > 0;
+  const ageOptions = Array.isArray(product?.age)
+    ? product.age.filter(Boolean)
+    : product?.age
+    ? [product.age]
+    : [];
 
-    try {
-      await api.delete(`/cart/${item.id}`);
+  const hasMultipleAges = ageOptions.length > 1;
 
-      dispatch(
-        removeFromCart({
-          id: item.id,
-          selectedSize: item.selectedSize,
-          productVariantId: item.productVariantId,
-        })
+  const productImages = [
+    ...(product?.image ? [product.image] : []),
+    ...(Array.isArray(product?.images) ? product.images : []),
+  ].filter(
+    (image, index, array) =>
+      image && array.indexOf(image) === index
+  );
+
+  const availableSizes = hasMultipleAges && selectedAge
+    ? product.sizes.filter((size) => size.ageGroup === selectedAge)
+    : product?.sizes ?? [];
+
+  const selectedSizeData =
+    product?.sizes?.find(
+      (size) =>
+        size.size === selectedSize &&
+        (!size.ageGroup || !selectedAge || size.ageGroup === selectedAge)
+    );
+
+  const currentStock = hasSizes
+    ? Number(
+        selectedSizeData?.stock ?? 0
+      )
+    : Number(
+        product?.stock ?? 0
       );
 
-      notify("success", "Removed from cart");
-    } catch (error) {
-      console.error("Remove cart error:", error);
+  const outOfStock = hasSizes
+    ? selectedSize &&
+      currentStock <= 0
+    : currentStock <= 0;
 
-      const message =
-        error?.response?.data?.errors?.[0] ||
-        error?.response?.data?.message ||
-        "Failed to remove item.";
+  const openZoom = () => {
+    setZoomScale(1);
+    setIsZoomOpen(true);
+  };
 
-      notify("error", message);
+  const closeZoom = () => {
+    setZoomScale(1);
+    setIsZoomOpen(false);
+  };
+
+  const increaseZoom = () => {
+    setZoomScale((previous) =>
+      Math.min(previous + 0.25, 3)
+    );
+  };
+
+  const decreaseZoom = () => {
+    setZoomScale((previous) =>
+      Math.max(previous - 0.25, 1)
+    );
+  };
+
+  const resetZoom = () => {
+    setZoomScale(1);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeZoom();
+      }
+    };
+
+    if (isZoomOpen) {
+      document.addEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [isZoomOpen]);
+
+  const handleSizeSelect = (size) => {
+    const matchingSize = availableSizes.find((item) => item.size === size);
+    if (!matchingSize || Number(matchingSize.stock ?? 0) <= 0) return;
+    setSelectedSize(size);
+    if (!hasMultipleAges && ageOptions.length === 1) {
+      setSelectedAge(ageOptions[0]);
     }
   };
 
-  const handleQtyChange = async (item, newQty) => {
-    if (!token) {
-      notify("error", "Please login first");
-      navigate("/login");
+  const handleAgeSelect = (age) => {
+    setSelectedAge(age);
+    setSelectedSize("");
+  };
+
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    if (!user) {
+      toast.error("Please login first");
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 500);
+
       return;
     }
-
-    if (newQty <= 0) {
-      return;
-    }
-
-    const availableStock = getAvailableStock(item);
 
     if (
-      availableStock !== undefined &&
-      newQty > availableStock
+      hasSizes &&
+      !selectedSize
     ) {
-      notify("warning", 
-        `Only ${availableStock} items are available.`
-      );
-
+      toast.error("Please select size");
       return;
     }
 
-    if (updatingItems[item.id]) {
+    if (
+      hasSizes &&
+      ageOptions.length > 0 &&
+      !selectedAge
+    ) {
+      toast.error("Please select age");
       return;
     }
 
-    setUpdatingItems((previous) => ({
-      ...previous,
-      [item.id]: true,
-    }));
+    if (currentStock <= 0) {
+      toast.error("Out of stock");
+      return;
+    }
+
+    const exists = items.some(
+      (item) =>
+        String(
+          item.productId || item.id
+        ) === String(product.id) &&
+        String(
+          item.selectedSize || ""
+        ) ===
+          String(
+            selectedSize || ""
+          ) &&
+        String(
+          item.selectedAge || ""
+        ) ===
+          String(
+            selectedAge || ""
+          )
+    );
+
+    if (exists) {
+      toast.error("Already in cart");
+      return;
+    }
+
+    const cartItem = {
+      ...product,
+      selectedSize:
+        selectedSize || null,
+      selectedAge:
+        selectedAge || null,
+      qty: 1,
+      productId: product.id,
+      userId: user.id,
+    };
 
     try {
-      const response = await api.put(
-        `/cart/${item.id}`,
-        {
-          quantity: Number(newQty),
-        }
+      const response = await api.post(
+        "/cart",
+        cartItem
       );
 
-      const updatedItem =
-        response?.data?.data ??
-        response?.data;
+      const responseData = response.data;
+      const data = responseData?.data ?? responseData;
 
       dispatch(
-        updateQty({
-          id: item.id,
-          selectedSize: item.selectedSize,
-          productVariantId: item.productVariantId,
-          qty: Number(
-            updatedItem?.quantity ??
-            updatedItem?.Quantity ??
-            newQty
-          ),
-        })
+        addToCart(data)
       );
 
-      const returnedStock =
-        updatedItem?.availableStock ??
-        updatedItem?.stock ??
-        updatedItem?.Stock;
-
-      if (
-        returnedStock !== undefined &&
-        returnedStock !== null
-      ) {
-        setStockInfo((previous) => ({
-          ...previous,
-          [getStockKey(item)]: Number(returnedStock),
-        }));
-      }
+      toast.success(
+        "Added to cart"
+      );
     } catch (error) {
-      console.error("Update cart error:", error);
+      console.error(
+        "Add to cart error:",
+        error
+      );
 
-      const message =
-        error?.response?.data?.errors?.[0] ||
-        error?.response?.data?.message ||
-        "Failed to update quantity.";
-
-      notify("error", message);
-    } finally {
-      setUpdatingItems((previous) => ({
-        ...previous,
-        [item.id]: false,
-      }));
+      toast.error(
+        "Failed to add to cart"
+      );
     }
   };
 
-  const handleClear = async () => {
-    if (!token) {
-      notify("error", "Please login first");
+  const handleBuyNow = () => {
+    if (!product) return;
+
+    if (!user) {
+      toast.error("Please login first");
+
+      setTimeout(() => {
+        navigate("/login");
+      }, 500);
+
+      return;
+    }
+
+    if (
+      hasSizes &&
+      !selectedSize
+    ) {
+      toast.error("Please select size");
+      return;
+    }
+
+    if (
+      hasSizes &&
+      ageOptions.length > 0 &&
+      !selectedAge
+    ) {
+      toast.error("Please select age");
+      return;
+    }
+
+    if (currentStock <= 0) {
+      toast.error("Out of stock");
+      return;
+    }
+
+    localStorage.removeItem(
+      "buyNowItem"
+    );
+
+    const buyNowItem = {
+      ...product,
+      selectedSize:
+        selectedSize || null,
+      selectedAge:
+        selectedAge || null,
+      qty: 1,
+      productId: product.id,
+      userId: user.id,
+    };
+
+    localStorage.setItem(
+      "buyNowItem",
+      JSON.stringify(
+        buyNowItem
+      )
+    );
+
+    toast.success(
+      "Proceeding to checkout"
+    );
+
+    navigate("/checkout");
+  };
+
+  const loadReviews = async () => {
+    try {
+      const response = await api.get(
+        `/reviews/product/${id}`
+      );
+
+      const responseData = response.data;
+
+      const productReviews =
+        Array.isArray(responseData?.data)
+          ? responseData.data
+          : Array.isArray(responseData)
+          ? responseData
+          : [];
+
+      const sortedReviews =
+        [...productReviews].sort(
+          (a, b) =>
+            new Date(
+              b.createdAt
+            ) -
+            new Date(
+              a.createdAt
+            )
+        );
+
+      setReviews(
+        sortedReviews
+      );
+    } catch (error) {
+      console.error(
+        "Review fetch error:",
+        error
+      );
+
+      setReviews([]);
+
+      const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.errors?.[0] ||
+        "Failed to retrieve reviews.";
+
+      console.error(
+        "Backend review error:",
+        message
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      loadReviews();
+    }
+  }, [id]);
+
+  const handleSubmitReview = async () => {
+    const currentUser =
+      JSON.parse(
+        localStorage.getItem(
+          "user"
+        ) || "null"
+      );
+
+    if (!currentUser) {
+      toast.error(
+        "Please login first"
+      );
+
       navigate("/login");
       return;
     }
 
+    if (
+      rating < 1 ||
+      rating > 5
+    ) {
+      toast.error(
+        "Please select a rating"
+      );
+
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      toast.error(
+        "Please write a review"
+      );
+
+      return;
+    }
+
+    const alreadyReviewed =
+      reviews.some(
+        (review) =>
+          String(
+            review.userId
+          ) ===
+            String(
+              currentUser.id
+            ) &&
+          String(
+            review.productId
+          ) ===
+            String(
+              product.id
+            )
+      );
+
+    if (alreadyReviewed) {
+      toast.info(
+        "You have already reviewed this product"
+      );
+
+      return;
+    }
+
+    const reviewData = {
+      productId: Number(
+        product.id
+      ),
+      rating: Number(
+        rating
+      ),
+      title:
+        reviewTitle.trim(),
+      comment:
+        reviewComment.trim(),
+    };
+
     try {
-      await api.delete("/cart");
+      setReviewLoading(true);
 
-      dispatch(clearCart());
+      await api.post(
+        "/reviews",
+        reviewData
+      );
 
-      setStockInfo({});
+      await loadReviews();
 
-      notify("success", "Cart cleared");
+      setRating(0);
+      setReviewTitle("");
+      setReviewComment("");
+
+      toast.success(
+        "Review added successfully"
+      );
     } catch (error) {
-      console.error("Clear cart error:", error);
+      console.error(
+        "Review submit error:",
+        error
+      );
+
+      if (
+        error?.response?.status === 401
+      ) {
+        toast.error(
+          "Please login first"
+        );
+
+        navigate("/login");
+        return;
+      }
 
       const message =
-        error?.response?.data?.errors?.[0] ||
         error?.response?.data?.message ||
-        "Failed to clear cart.";
+        error?.response?.data?.errors?.[0] ||
+        "Failed to add review.";
 
-      notify("error", message);
+      toast.error(
+        message
+      );
+    } finally {
+      setReviewLoading(false);
     }
   };
 
-  if (items.length === 0) {
+  const averageRating =
+    reviews.length > 0
+      ? reviews.reduce(
+          (total, review) =>
+            total +
+            Number(
+              review.rating || 0
+            ),
+          0
+        ) / reviews.length
+      : 0;
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-[#faf8f5] px-4 py-16">
-        <div className="mx-auto max-w-5xl">
-          <h1 className="mb-4 text-center text-3xl font-semibold tracking-tight text-[#382d27]">
-            Your Shopping Cart
-          </h1>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-center text-lg">
+          Loading...
+        </p>
+      </div>
+    );
+  }
 
-          <p className="text-center text-sm text-[#8b7b70]">
-            Your cart is waiting for something lovely.
-          </p>
-
-          <div className="mt-12 rounded-2xl border border-[#e9e1d9] bg-white px-6 py-16 text-center">
-            <p className="text-lg font-medium text-[#57473c]">
-              Your cart is empty
-            </p>
-
-            <p className="mt-2 text-sm text-[#948579]">
-              Explore our collection and find something special.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="mt-6 rounded-full bg-[#594438] px-8 py-3 text-sm font-medium text-white transition hover:bg-[#443329]"
-            >
-              Continue Shopping
-            </button>
-          </div>
-        </div>
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <p className="text-center text-lg">
+          Product not found
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#faf8f5] px-4 py-10 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-6xl">
-<div className="mb-10 border-b border-[#e9e1d9] pb-6">
-          <p className="mb-2 text-center text-xs font-medium uppercase tracking-[0.25em] text-[#9a8575]">
-            KIDZY COLLECTION
-          </p>
+    <div className="px-4 md:px-10 py-10 bg-white min-h-screen">
 
-          <h1 className="text-center text-3xl font-semibold tracking-tight text-[#382d27] sm:text-4xl">
-            Your Shopping Cart
-          </h1>
+      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 bg-white p-5 md:p-7 rounded-2xl shadow-md">
 
-          <p className="mt-3 text-center text-sm text-[#8b7b70]">
-            Review your little one's favourites.
-          </p>
-        </div>
+        <div>
 
-        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[1fr_340px]">
-<div className="space-y-4">
-            {items.map((item) => {
-              const availableStock = getAvailableStock(item);
+          <div
+            className="
+              group
+              relative
+              w-[400px]
+              max-w-full
+              mx-auto
+              aspect-[3/4]
+              bg-white
+              rounded-2xl
+              overflow-hidden
+              border
+              border-gray-100
+              cursor-zoom-in
+            "
+            onClick={openZoom}
+            title="Click to zoom"
+          >
 
-              const isUpdating = Boolean(
-                updatingItems[item.id]
-              );
+            <img
+              src={
+                selectedImage ||
+                product.image
+              }
+              alt={product.name}
+              className="
+                w-full
+                h-full
+                object-contain
+                transition-transform
+                duration-500
+                group-hover:scale-[1.03]
+              "
+            />
 
-              const isAtStockLimit =
-                availableStock !== undefined &&
-                Number(item.qty) >= availableStock;
-
-              return (
-                <div
-                  key={`${item.id}_${item.productVariantId ?? item.selectedSize ?? ""}`}
-                  className="rounded-2xl border border-[#e9e1d9] bg-white p-4 sm:p-5"
-                >
-                  <div className="flex gap-4 sm:gap-6">
-<div className="h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-[#f4eee8] sm:h-36 sm:w-32">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name || "Kidzy product"}
-                          className="h-full w-full object-cover"
-                          loading="lazy"
-                          onError={(event) => {
-                            console.error("Cart product image failed to load:", event.currentTarget.src);
-                            event.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-[#9a8575]">
-                          Image unavailable
-                        </div>
-                      )}
-                    </div>
-<div className="flex min-w-0 flex-1 flex-col">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h2 className="break-words text-base font-medium text-[#382d27] sm:text-lg">
-                            {item.name}
-                          </h2>
-
-                          <p className="mt-2 text-sm font-medium text-[#796253]">
-                            ₹{Number(item.price).toLocaleString("en-IN")}
-                          </p>
-
-                          {item.selectedSize && (
-                            <p className="mt-1 text-sm text-[#8b7b70]">
-                              Size: {item.selectedSize}
-                            </p>
-                          )}
-                        </div>
-<button
-                          type="button"
-                          onClick={() => handleRemove(item)}
-                          className="shrink-0 text-xs font-medium text-[#907b6b] underline underline-offset-4 transition hover:text-[#49372c]"
-                        >
-                          Remove
-                        </button>
-                      </div>
-{availableStock !== undefined && (
-                        <p
-                          className={`mt-3 text-xs ${
-                            availableStock <= 0
-                              ? "text-[#9b3e36]"
-                              : availableStock <= 3
-                                ? "text-[#94713d]"
-                                : "text-[#658064]"
-                          }`}
-                        >
-                          {availableStock <= 0
-                            ? "Out of stock"
-                            : `${availableStock} available`}
-                        </p>
-                      )}
-<div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-4">
-                        <div className="inline-flex items-center overflow-hidden rounded-full border border-[#e5dcd3]">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleQtyChange(
-                                item,
-                                Number(item.qty) - 1
-                              )
-                            }
-                            disabled={
-                              Number(item.qty) <= 1 ||
-                              isUpdating
-                            }
-                            aria-label="Decrease quantity"
-                            className="flex h-9 w-10 items-center justify-center text-lg text-[#594438] transition hover:bg-[#f5efe9] disabled:cursor-not-allowed disabled:opacity-35"
-                          >
-                            −
-                          </button>
-
-                          <span className="flex h-9 min-w-10 items-center justify-center border-x border-[#e5dcd3] px-2 text-sm font-medium text-[#382d27]">
-                            {item.qty}
-                          </span>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleQtyChange(
-                                item,
-                                Number(item.qty) + 1
-                              )
-                            }
-                            disabled={
-                              isUpdating ||
-                              availableStock === 0 ||
-                              isAtStockLimit
-                            }
-                            aria-label="Increase quantity"
-                            className="flex h-9 w-10 items-center justify-center text-lg text-[#594438] transition hover:bg-[#f5efe9] disabled:cursor-not-allowed disabled:opacity-35"
-                          >
-                            +
-                          </button>
-                        </div>
-
-                        <p className="text-sm font-semibold text-[#382d27]">
-                          ₹
-                          {(
-                            Number(item.price) *
-                            Number(item.qty)
-                          ).toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-<aside className="rounded-2xl border border-[#e9e1d9] bg-white p-6 lg:sticky lg:top-24">
-            <h2 className="text-lg font-semibold text-[#382d27]">
-              Order Summary
-            </h2>
-
-            <div className="mt-6 space-y-4">
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#8b7b70]">
-                  Subtotal
-                </span>
-
-                <span className="font-medium text-[#382d27]">
-                  ₹{Number(totalPrice || 0).toLocaleString("en-IN")}
-                </span>
-              </div>
-
-              <div className="flex justify-between gap-4 text-sm">
-                <span className="text-[#8b7b70]">
-                  Delivery
-                </span>
-
-                <span className="font-medium text-[#658064]">
-                  Calculated at checkout
-                </span>
-              </div>
-
-              <div className="border-t border-[#e9e1d9] pt-4">
-                <div className="flex items-center justify-between gap-4">
-                  <span className="font-semibold text-[#382d27]">
-                    Subtotal
-                  </span>
-
-                  <span className="text-xl font-semibold text-[#382d27]">
-                    ₹{Number(totalPrice || 0).toLocaleString("en-IN")}
-                  </span>
-                </div>
-              </div>
+            <div
+              className="
+                absolute
+                bottom-4
+                right-4
+                bg-white/95
+                border
+                border-gray-200
+                rounded-full
+                px-3
+                py-2
+                text-xs
+                font-medium
+                text-gray-700
+                shadow-sm
+                opacity-0
+                group-hover:opacity-100
+                transition-opacity
+                duration-300
+                pointer-events-none
+              "
+            >
+              Click to zoom
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.removeItem("buyNowItem");
-                navigate("/checkout");
-              }}
-              className="mt-7 w-full rounded-full bg-[#594438] px-6 py-3.5 text-sm font-medium text-white transition hover:bg-[#443329]"
-            >
-              Proceed to Checkout
-            </button>
+          </div>
 
-            <button
-              type="button"
-              onClick={handleClear}
-              className="mt-3 w-full rounded-full border border-[#e5dcd3] px-6 py-3 text-sm font-medium text-[#796253] transition hover:bg-[#f8f4ef]"
-            >
-              Clear Cart
-            </button>
+          {productImages.length > 1 && (
+            <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
 
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="mt-4 w-full text-center text-xs text-[#8b7b70] underline underline-offset-4 transition hover:text-[#49372c]"
-            >
-              Continue Shopping
-            </button>
-          </aside>
+              {productImages.map(
+                (image, index) => (
+                  <button
+                    type="button"
+                    key={`${image}-${index}`}
+                    onClick={() =>
+                      setSelectedImage(
+                        image
+                      )
+                    }
+                    className={`
+                      flex-shrink-0
+                      rounded-xl
+                      overflow-hidden
+                      border-2
+                      ${
+                        selectedImage ===
+                        image
+                          ? "border-orange-500"
+                          : "border-transparent"
+                      }
+                    `}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-20 h-24 object-contain bg-white"
+                    />
+                  </button>
+                )
+              )}
+
+            </div>
+          )}
+
         </div>
+
+        <div className="pt-2">
+
+          <h1 className="text-2xl font-bold">
+            {product.name}
+          </h1>
+
+          {product.category && (
+            <p className="text-gray-500 mt-2">
+              Category:{" "}
+              {product.category}
+            </p>
+          )}
+
+          {product.subCategory && (
+            <p className="text-gray-500 mt-1">
+              Type:{" "}
+              {product.subCategory}
+            </p>
+          )}
+
+          {product.gender && (
+            <p className="text-gray-500 mt-1">
+              For:{" "}
+              {product.gender}
+            </p>
+          )}
+
+          {product.age && (
+            <p className="text-gray-500 mt-1">
+              Age:{" "}
+              {Array.isArray(product.age)
+                ? product.age.join(" • " )
+                : product.age}
+            </p>
+          )}
+
+          <p className="text-3xl font-bold mt-5">
+            ₹{product.price}
+          </p>
+
+          {((hasSizes && selectedSize) || !hasSizes) && currentStock > 0 && currentStock < 5 && (
+            <p className="mt-3 text-sm font-semibold text-[#6B4F3A]">
+              Only {currentStock} left
+            </p>
+          )}
+
+          {((hasSizes && selectedSize) || !hasSizes) && currentStock <= 0 && (
+            <p className="mt-3 text-sm font-semibold text-[#6B4F3A]">
+              Out of Stock
+            </p>
+          )}
+
+          <div className="mt-8 pt-6 border-t border-gray-200">
+
+            <h2 className="text-lg font-semibold text-gray-900">
+              Product Description
+            </h2>
+
+            <p className="text-sm text-gray-600 mt-3 leading-7">
+              {product.description ||
+                "A stylish and comfortable choice for little ones, designed for everyday wear and special moments."}
+            </p>
+
+          </div>
+
+          {hasSizes && (
+            <div className="mt-8">
+              {hasMultipleAges && (
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-4">Select Age</h3>
+                  <div className="flex flex-wrap gap-3">
+                    {ageOptions.map((age) => (
+                      <button
+                        type="button"
+                        key={age}
+                        onClick={() => handleAgeSelect(age)}
+                        className={`px-4 py-3 border rounded-xl text-sm font-medium transition ${selectedAge === age ? "border-orange-500 text-orange-600 bg-orange-50" : "border-gray-300 text-gray-700 hover:border-[#8B6B52]"}`}
+                      >
+                        {age}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <h3 className="text-xl font-semibold mb-4">
+                Select Size
+              </h3>
+
+              {hasMultipleAges && !selectedAge ? (
+                <p className="text-gray-500">Select an age first to view available sizes.</p>
+              ) : (
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+
+                {availableSizes.map(
+                  (sizeObj) => {
+
+                    const sizeStock =
+                      Number(
+                        sizeObj.stock ?? 0
+                      );
+
+                    const sizeOutOfStock =
+                      sizeStock <= 0;
+
+                    return (
+                      <button
+                        type="button"
+                        key={
+                          sizeObj.size
+                        }
+                        onClick={() =>
+                          handleSizeSelect(
+                            sizeObj.size
+                          )
+                        }
+                        disabled={
+                          sizeOutOfStock
+                        }
+                        className={`
+                          min-w-[110px]
+                          px-3
+                          py-3
+                          border
+                          rounded-xl
+                          text-sm
+                          font-medium
+                          transition
+                          ${
+                            sizeOutOfStock
+                              ? "border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed"
+                              : selectedSize ===
+                                sizeObj.size
+                              ? "border-[#6B4F3A] text-[#6B4F3A] bg-[#F7F3EE]"
+                              : "border-gray-400 text-gray-700 bg-white hover:border-[#8B6B52]"
+                          }
+                        `}
+                      >
+
+                        <div>
+                          {sizeObj.size}
+                        </div>
+
+                        {sizeOutOfStock && (
+                          <div className="mt-1 text-xs font-semibold text-[#6B4F3A]">
+                            Out of Stock
+                          </div>
+                        )}
+
+                      </button>
+                    );
+                  }
+                )}
+
+              </div>
+              )}
+
+            </div>
+          )}
+
+          <div className="flex gap-3 mt-7">
+
+            <button
+              type="button"
+              onClick={
+                handleBuyNow
+              }
+              disabled={Boolean(
+                outOfStock
+              )}
+              className={`
+                flex-1
+                h-14
+                rounded-full
+                border
+                font-semibold
+                text-base
+                transition
+                ${
+                  outOfStock
+                    ? "border-gray-300 text-gray-400 bg-white cursor-not-allowed"
+                    : "border-gray-300 bg-white text-gray-900 hover:bg-gray-50"
+                }
+              `}
+            >
+              Buy Now
+            </button>
+
+            <button
+              type="button"
+              onClick={
+                handleAddToCart
+              }
+              disabled={Boolean(
+                outOfStock
+              )}
+              className={`
+                flex-1
+                h-14
+                rounded-full
+                font-semibold
+                text-base
+                transition
+                ${
+                  outOfStock
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-[#6B4F3A] text-white hover:bg-[#5A4030]"
+                }
+              `}
+            >
+              {outOfStock
+                ? "Out of Stock"
+                : "Add to Bag"}
+            </button>
+
+          </div>
+
+        </div>
+
       </div>
+
+      {isZoomOpen && (
+        <div
+          className="
+            fixed
+            inset-0
+            z-[100]
+            bg-black/80
+            flex
+            items-center
+            justify-center
+            p-4
+          "
+          onClick={closeZoom}
+        >
+
+          <button
+            type="button"
+            onClick={closeZoom}
+            aria-label="Close image zoom"
+            className="
+              absolute
+              top-4
+              right-4
+              sm:top-6
+              sm:right-6
+              z-20
+              w-11
+              h-11
+              rounded-full
+              bg-white
+              text-gray-900
+              text-2xl
+              flex
+              items-center
+              justify-center
+              shadow-lg
+              hover:bg-gray-100
+            "
+          >
+            ×
+          </button>
+
+          <div
+            className="
+              absolute
+              bottom-5
+              left-1/2
+              -translate-x-1/2
+              z-20
+              flex
+              items-center
+              gap-2
+              bg-white
+              rounded-full
+              shadow-lg
+              p-2
+            "
+            onClick={(event) => event.stopPropagation()}
+          >
+
+            <button
+              type="button"
+              onClick={decreaseZoom}
+              disabled={zoomScale <= 1}
+              className="
+                w-10
+                h-10
+                rounded-full
+                border
+                border-gray-200
+                text-xl
+                disabled:opacity-40
+              "
+              aria-label="Zoom out"
+            >
+              −
+            </button>
+
+            <button
+              type="button"
+              onClick={resetZoom}
+              className="
+                px-4
+                h-10
+                rounded-full
+                border
+                border-gray-200
+                text-sm
+                font-medium
+              "
+            >
+              {Math.round(zoomScale * 100)}%
+            </button>
+
+            <button
+              type="button"
+              onClick={increaseZoom}
+              disabled={zoomScale >= 3}
+              className="
+                w-10
+                h-10
+                rounded-full
+                border
+                border-gray-200
+                text-xl
+                disabled:opacity-40
+              "
+              aria-label="Zoom in"
+            >
+              +
+            </button>
+
+          </div>
+
+          <div
+            className="
+              max-w-[92vw]
+              max-h-[88vh]
+              flex
+              items-center
+              justify-center
+              overflow-auto
+            "
+            onClick={(event) => event.stopPropagation()}
+          >
+
+            <img
+              src={
+                selectedImage ||
+                product.image
+              }
+              alt={product.name}
+              className="
+                max-w-full
+                max-h-[85vh]
+                w-auto
+                h-auto
+                object-contain
+                rounded-xl
+                select-none
+                origin-center
+                transition-transform
+                duration-200
+              "
+              style={{
+                transform: `scale(${zoomScale})`,
+              }}
+            />
+
+          </div>
+
+        </div>
+      )}
+
+      <section className="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-md p-5 md:p-7">
+
+        <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-5">
+
+          <div>
+
+            <h2 className="text-2xl font-bold text-gray-900">
+              Ratings & Reviews
+            </h2>
+
+            <p className="text-sm text-gray-500 mt-1">
+              {reviews.length}{" "}
+              {reviews.length === 1
+                ? "review"
+                : "reviews"}
+            </p>
+
+          </div>
+
+          {reviews.length > 0 && (
+            <div className="flex items-center gap-3">
+
+              <div className="text-3xl font-bold text-gray-900">
+                {averageRating.toFixed(1)}
+              </div>
+
+              <div>
+
+                <div className="text-yellow-400 text-base tracking-wide">
+
+                  {"★".repeat(
+                    Math.round(
+                      averageRating
+                    )
+                  )}
+
+                  <span className="text-gray-300">
+                    {"★".repeat(
+                      5 -
+                        Math.round(
+                          averageRating
+                        )
+                    )}
+                  </span>
+
+                </div>
+
+                <p className="text-xs text-gray-500">
+                  Average rating
+                </p>
+
+              </div>
+
+            </div>
+          )}
+
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-5 mt-6">
+
+          <div className="bg-gray-50 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
+
+            <p className="text-sm text-gray-500">
+              Product Rating
+            </p>
+
+            <p className="text-4xl font-bold text-gray-900 mt-2">
+              {reviews.length > 0
+                ? averageRating.toFixed(
+                    1
+                  )
+                : "0.0"}
+            </p>
+
+            <div className="text-yellow-400 text-lg mt-1 tracking-wide">
+              ★★★★★
+            </div>
+
+            <p className="text-xs text-gray-500 mt-2">
+              Based on {reviews.length}{" "}
+              {reviews.length === 1
+                ? "review"
+                : "reviews"}
+            </p>
+
+          </div>
+
+          {user && (
+            <div className="border border-gray-200 rounded-2xl p-5">
+
+              <h3 className="text-lg font-semibold text-gray-900">
+                Write a Review
+              </h3>
+
+              <p className="text-sm text-gray-500 mt-1 mb-4">
+                Share your experience with this product.
+              </p>
+
+              <div className="flex items-center gap-1 mb-4">
+
+                {[1, 2, 3, 4, 5].map(
+                  (star) => (
+                    <button
+                      type="button"
+                      key={star}
+                      onClick={() =>
+                        setRating(star)
+                      }
+                      aria-label={`${star} star`}
+                      className={`
+                        text-3xl
+                        leading-none
+                        transition
+                        ${
+                          star <= rating
+                            ? "text-yellow-400"
+                            : "text-gray-300 hover:text-yellow-300"
+                        }
+                      `}
+                    >
+                      ★
+                    </button>
+                  )
+                )}
+
+                <span className="text-sm text-gray-500 ml-2">
+                  {rating > 0
+                    ? `${rating}/5`
+                    : "Select a rating"}
+                </span>
+
+              </div>
+
+              <input
+                type="text"
+                value={reviewTitle}
+                onChange={(e) =>
+                  setReviewTitle(
+                    e.target.value
+                  )
+                }
+                placeholder="Review title (optional)"
+                className="
+                  w-full
+                  border
+                  border-gray-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  mb-3
+                  outline-none
+                  focus:border-gray-500
+                "
+              />
+
+              <textarea
+                rows="4"
+                value={reviewComment}
+                onChange={(e) =>
+                  setReviewComment(
+                    e.target.value
+                  )
+                }
+                placeholder="Write your review..."
+                className="
+                  w-full
+                  border
+                  border-gray-300
+                  rounded-xl
+                  px-4
+                  py-3
+                  mb-4
+                  outline-none
+                  focus:border-gray-500
+                  resize-none
+                "
+              />
+
+              <button
+                type="button"
+                onClick={
+                  handleSubmitReview
+                }
+                disabled={
+                  reviewLoading
+                }
+                className="
+                  w-full
+                  sm:w-auto
+                  bg-black
+                  text-white
+                  px-6
+                  py-3
+                  rounded-xl
+                  font-semibold
+                  hover:bg-gray-800
+                  transition
+                  disabled:opacity-50
+                "
+              >
+                {reviewLoading
+                  ? "Submitting..."
+                  : "Submit Review"}
+              </button>
+
+            </div>
+            )}
+
+        </div>
+
+        <div className="mt-7">
+
+          <div className="flex items-center justify-between mb-4">
+
+            <div>
+
+              <h3 className="text-lg font-semibold text-gray-900">
+                Customer Reviews
+              </h3>
+
+              <p className="text-xs text-gray-500 mt-1">
+                Reviews from all customers
+              </p>
+
+            </div>
+
+          </div>
+
+          {reviews.length === 0 ? (
+
+            <div className="border border-dashed border-gray-300 rounded-2xl py-10 px-5 text-center">
+
+              <p className="text-gray-600 font-medium">
+                No reviews yet
+              </p>
+
+              <p className="text-sm text-gray-500 mt-1">
+                Be the first to review this product.
+              </p>
+
+            </div>
+
+          ) : (
+
+            <div className="space-y-3">
+
+              {reviews.map(
+                (review, index) => {
+
+                  const reviewRating =
+                    Math.max(
+                      0,
+                      Math.min(
+                        5,
+                        Number(
+                          review.rating || 0
+                        )
+                      )
+                    );
+
+                  return (
+                    <div
+                      key={
+                        review.id ??
+                        index
+                      }
+                      className="
+                        border
+                        border-gray-200
+                        rounded-2xl
+                        p-4
+                        md:p-5
+                      "
+                    >
+
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+
+                        <div>
+
+                          <p className="font-semibold text-gray-900">
+                            {review.userName ||
+                              "Customer"}
+                          </p>
+
+                          <div className="flex items-center gap-2 mt-1">
+
+                            <div className="text-yellow-400 text-sm tracking-wide">
+
+                              {"★".repeat(
+                                reviewRating
+                              )}
+
+                              <span className="text-gray-300">
+
+                                {"★".repeat(
+                                  5 -
+                                    reviewRating
+                                )}
+
+                              </span>
+
+                            </div>
+
+                            <span className="text-xs text-gray-400">
+                              {reviewRating}/5
+                            </span>
+
+                          </div>
+
+                        </div>
+
+                        {review.createdAt && (
+                          <span className="text-xs text-gray-400">
+                            {new Date(
+                              review.createdAt
+                            ).toLocaleDateString(
+                              "en-IN"
+                            )}
+                          </span>
+                        )}
+
+                      </div>
+
+                      {review.title && (
+                        <h4 className="font-semibold text-gray-900 mt-4">
+                          {review.title}
+                        </h4>
+                      )}
+
+                      <p className="text-gray-600 mt-2 leading-6">
+                        {review.comment}
+                      </p>
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+
+          )}
+
+        </div>
+
+      </section>
+
     </div>
   );
 }
 
-export default Cart;
+export default ProductDetails;
