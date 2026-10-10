@@ -15,6 +15,37 @@ import { toast } from "react-toastify";
 
 import api from "../api/api";
 
+const getImageUrl = (image) => {
+  if (!image) return "";
+
+  if (Array.isArray(image)) {
+    return getImageUrl(image[0]);
+  }
+
+  if (typeof image !== "string") {
+    return "";
+  }
+
+  const value = image.trim();
+  if (!value) return "";
+
+  try {
+    const parsed = JSON.parse(value);
+
+    if (Array.isArray(parsed)) {
+      return getImageUrl(parsed[0]);
+    }
+
+    if (typeof parsed === "string" && parsed !== value) {
+      return getImageUrl(parsed);
+    }
+  } catch {
+    // The value is already a regular URL.
+  }
+
+  return value;
+};
+
 function Cart() {
   const notify = (type, message) => {
     toast[type](message, {
@@ -108,11 +139,12 @@ function Cart() {
               item.ProductName ??
               "",
 
-            image:
+            image: getImageUrl(
               item.image ??
               item.imageUrl ??
               item.ImageUrl ??
-              "",
+              ""
+            ),
 
             price:
               Number(item.price ?? item.Price ?? 0),
@@ -386,11 +418,16 @@ function Cart() {
                 >
                   <div className="flex gap-4 sm:gap-6">
 <div className="h-28 w-24 shrink-0 overflow-hidden rounded-xl bg-[#f4eee8] sm:h-36 sm:w-32">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="h-full w-full object-cover"
-                      />
+                      {item.image && (
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
                     </div>
 <div className="flex min-w-0 flex-1 flex-col">
                       <div className="flex items-start justify-between gap-3">
