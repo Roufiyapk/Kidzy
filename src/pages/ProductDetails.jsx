@@ -815,44 +815,6 @@ function ProductDetails() {
 
           {}
 
-          <div className="mt-4">
-
-            {hasSizes ? (
-              !selectedSize ? (
-                <p className="text-gray-500 font-medium">
-                  Select a size to check stock
-                </p>
-              ) : currentStock <= 0 ? (
-                <p className="text-[#6B4F3A] font-semibold">
-                  Out of Stock
-                </p>
-              ) : currentStock <= 3 ? (
-                <p className="text-[#5A4030] font-semibold">
-                  Only {currentStock} left in stock
-                </p>
-              ) : (
-                <p className="text-[#5A4030] font-semibold">
-                  In Stock:{" "}
-                  {currentStock}
-                </p>
-              )
-            ) : currentStock <= 0 ? (
-              <p className="text-[#6B4F3A] font-semibold">
-                Out of Stock
-              </p>
-            ) : currentStock <= 3 ? (
-              <p className="text-[#5A4030] font-semibold">
-                Only {currentStock} left in stock
-              </p>
-            ) : (
-              <p className="text-[#5A4030] font-semibold">
-                In Stock:{" "}
-                {currentStock}
-              </p>
-            )}
-
-          </div>
-
           {}
 
           <div className="mt-8 pt-6 border-t border-gray-200">
@@ -928,24 +890,6 @@ function ProductDetails() {
                           {sizeObj.size}
                         </div>
 
-                        <div
-                          className={`
-                            text-xs
-                            mt-1
-                            ${
-                              sizeOutOfStock
-                                ? "text-[#6B4F3A]"
-                                : sizeStock <= 3
-                                ? "text-[#5A4030]"
-                                : "text-[#5A4030]"
-                            }
-                          `}
-                        >
-                          {sizeOutOfStock
-                            ? "Out of Stock"
-                            : `Stock: ${sizeStock}`}
-                        </div>
-
                       </button>
                     );
                   }
@@ -957,111 +901,6 @@ function ProductDetails() {
           )}
 
           {}
-
-          {!hasSizes && (
-            <div
-              className={`
-                mt-5
-                p-3
-                rounded-lg
-                border
-                ${
-                  currentStock <= 0
-                    ? "bg-[#F7F3EE] border-[#E7DED5]"
-                    : currentStock <= 3
-                    ? "bg-[#F7F3EE] border-orange-200"
-                    : "bg-[#F7F3EE] border-[#E7DED5]"
-                }
-              `}
-            >
-
-              <div className="flex justify-between items-center">
-
-                <span className="font-medium">
-                  Available Stock
-                </span>
-
-                <span
-                  className={`
-                    font-bold
-                    ${
-                      currentStock <= 0
-                        ? "text-[#6B4F3A]"
-                        : currentStock <= 3
-                        ? "text-[#5A4030]"
-                        : "text-[#5A4030]"
-                    }
-                  `}
-                >
-                  {currentStock <= 0
-                    ? "Out of Stock"
-                    : currentStock}
-                </span>
-
-              </div>
-
-            </div>
-          )}
-
-          {}
-
-          {hasSizes &&
-            selectedSize && (
-              <div
-                className={`
-                  mt-5
-                  p-3
-                  rounded-lg
-                  border
-                  ${
-                    currentStock <= 0
-                      ? "bg-[#F7F3EE] border-[#E7DED5]"
-                      : currentStock <= 3
-                      ? "bg-[#F7F3EE] border-orange-200"
-                      : "bg-[#F7F3EE] border-[#E7DED5]"
-                  }
-                `}
-              >
-
-                <div className="flex justify-between items-center">
-
-                  <span className="font-medium">
-                    Selected Size
-                  </span>
-
-                  <span className="font-semibold">
-                    {selectedSize}
-                  </span>
-
-                </div>
-
-                <div className="flex justify-between items-center mt-1">
-
-                  <span className="font-medium">
-                    Available Stock
-                  </span>
-
-                  <span
-                    className={`
-                      font-bold
-                      ${
-                        currentStock <= 0
-                          ? "text-[#6B4F3A]"
-                          : currentStock <= 3
-                          ? "text-[#5A4030]"
-                          : "text-[#5A4030]"
-                      }
-                    `}
-                  >
-                    {currentStock <= 0
-                      ? "Out of Stock"
-                      : currentStock}
-                  </span>
-
-                </div>
-
-              </div>
-            )}
 
           {}
 
