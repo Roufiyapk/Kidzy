@@ -31,30 +31,40 @@ function Orders() {
   );
 
   const getImageUrl = (imageUrl) => {
-    if (!imageUrl) {
+    if (typeof imageUrl !== "string" || !imageUrl.trim()) {
       return "";
     }
 
+    const normalizedImageUrl = imageUrl.trim();
+
     if (
-      imageUrl.startsWith("http://") ||
-      imageUrl.startsWith("https://") ||
-      imageUrl.startsWith("data:")
+      normalizedImageUrl.startsWith("http://") ||
+      normalizedImageUrl.startsWith("https://") ||
+      normalizedImageUrl.startsWith("data:") ||
+      normalizedImageUrl.startsWith("blob:")
     ) {
-      return imageUrl;
+      return normalizedImageUrl;
     }
 
-    const baseURL =
-      api.defaults?.baseURL || "";
+    const baseURL = api.defaults?.baseURL || "";
+    const backendBaseURL = baseURL.replace(/\/api\/?$/, "");
 
-    const backendBaseURL =
-      baseURL.replace(/\/api\/?$/, "");
-
-    if (imageUrl.startsWith("/")) {
-      return `${backendBaseURL}${imageUrl}`;
+    if (normalizedImageUrl.startsWith("/")) {
+      return `${backendBaseURL}${normalizedImageUrl}`;
     }
 
-    return `${backendBaseURL}/${imageUrl}`;
+    return `${backendBaseURL}/${normalizedImageUrl}`;
   };
+
+  const getOrderItemImageUrl = (item) =>
+    getImageUrl(
+      item?.imageUrl ||
+        item?.productImageUrl ||
+        item?.image ||
+        item?.product?.imageUrl ||
+        item?.product?.image ||
+        item?.product?.imagePath
+    );
 
   useEffect(() => {
     const getOrders = async () => {
@@ -467,9 +477,7 @@ function Orders() {
                             );
 
                           const imageUrl =
-                            getImageUrl(
-                              item.imageUrl
-                            );
+                            getOrderItemImageUrl(item);
 
                           return (
                             <div
@@ -651,7 +659,9 @@ function Orders() {
                           {status !==
                             "Delivered" &&
                             status !==
-                              "Cancelled" && (
+                              "Cancelled" &&
+                            String(order.paymentStatus || "")
+                              .toLowerCase() !== "paid" && (
 
                               <button
                                 type="button"
@@ -968,9 +978,7 @@ function Orders() {
                         );
 
                       const imageUrl =
-                        getImageUrl(
-                          item.imageUrl
-                        );
+                        getOrderItemImageUrl(item);
 
                       return (
                         <div

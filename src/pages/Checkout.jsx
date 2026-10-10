@@ -173,7 +173,8 @@ function Checkout() {
   };
 
   const getProductVariantId = (item) => {
-    return (
+    // First use an explicit variant ID if the item already has one.
+    const directVariantId =
       item?.productVariantId ??
       item?.ProductVariantId ??
       item?.productVariant?.id ??
@@ -181,9 +182,48 @@ function Checkout() {
       item?.variantId ??
       item?.VariantId ??
       item?.selectedVariantId ??
-      item?.SelectedVariantId ??
-      null
-    );
+      item?.SelectedVariantId;
+
+    if (directVariantId !== undefined && directVariantId !== null && directVariantId !== "") {
+      return directVariantId;
+    }
+
+    // Buy Now stores the full product. Resolve the parent variant by the
+    // selected age and size when a direct variant ID was not stored.
+    const variants = Array.isArray(item?.variants)
+      ? item.variants
+      : Array.isArray(item?.Variants)
+      ? item.Variants
+      : [];
+
+    const selectedSize = item?.selectedSize ?? item?.size ?? item?.Size ?? null;
+    const selectedAge = item?.selectedAge ?? item?.ageGroup ?? item?.AgeGroup ?? null;
+
+    const matchingVariant = variants.find((variant) => {
+      const ageGroup = variant?.ageGroup ?? variant?.AgeGroup ?? null;
+      const sizes = Array.isArray(variant?.sizes)
+        ? variant.sizes
+        : Array.isArray(variant?.Sizes)
+        ? variant.Sizes
+        : [];
+
+      const hasMatchingSize = selectedSize
+        ? sizes.some((size) => {
+            const sizeValue = typeof size === "string"
+              ? size
+              : size?.size ?? size?.Size ?? "";
+            return String(sizeValue) === String(selectedSize);
+          })
+        : true;
+
+      const hasMatchingAge = selectedAge
+        ? String(ageGroup ?? "") === String(selectedAge)
+        : true;
+
+      return hasMatchingSize && hasMatchingAge;
+    });
+
+    return matchingVariant?.id ?? matchingVariant?.Id ?? null;
   };
 
   const getQuantity = (item) => {
