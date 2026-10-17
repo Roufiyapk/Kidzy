@@ -368,32 +368,32 @@ function NewDrops() {
   }
 
   return (
-    <section className="bg-[#FBF9F6] px-4 sm:px-6 md:px-10 lg:px-14 py-10 md:py-12 border-b border-[#E9E0D6]">
-      <div className="max-w-7xl mx-auto relative">
+    <section className="w-full min-w-0 overflow-hidden bg-[#FBF9F6] px-3 py-7 sm:px-5 sm:py-10 md:px-10 lg:px-14 md:py-12 border-b border-[#E9E0D6]">
+      <div className="relative mx-auto w-full max-w-7xl min-w-0">
 
-        <div className="flex items-end justify-between gap-4 mb-6 md:mb-8">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end md:mb-8">
           <div className="flex flex-col gap-1.5">
             <p className="uppercase tracking-[0.24em] text-[10px] font-semibold text-[#A18468]">
               JUST ARRIVED
             </p>
 
-            <h2 className="text-2xl md:text-3xl font-serif font-medium tracking-tight text-[#49372B]">
+            <h2 className="text-2xl font-serif font-medium tracking-tight text-[#49372B] sm:text-3xl">
               New Drops
             </h2>
 
-            <p className="text-xs sm:text-sm text-[#817467] leading-relaxed max-w-md mt-1">
+            <p className="mt-1 max-w-md text-xs leading-relaxed text-[#817467] sm:text-sm">
               Fresh finds for little personalities and everyday adventures.
             </p>
 
             <div className="h-[2px] w-10 bg-[#B69A7B] mt-1" />
           </div>
 
-          <div className="flex gap-2 shrink-0">
+          <div className="flex shrink-0 gap-2 self-end sm:self-auto">
             <button
               type="button"
               onClick={() => handleScroll("left")}
               aria-label="Previous products"
-              className="w-9 h-9 rounded-full bg-white border border-[#E5DACE] flex items-center justify-center cursor-pointer text-[#6B5847] hover:bg-[#49372B] hover:text-white hover:border-[#49372B] transition-all duration-300"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E5DACE] bg-white text-[#6B5847] transition-all duration-300 hover:border-[#49372B] hover:bg-[#49372B] hover:text-white"
             >
               <FaChevronLeft className="text-xs" />
             </button>
@@ -402,7 +402,7 @@ function NewDrops() {
               type="button"
               onClick={() => handleScroll("right")}
               aria-label="Next products"
-              className="w-9 h-9 rounded-full bg-white border border-[#E5DACE] flex items-center justify-center cursor-pointer text-[#6B5847] hover:bg-[#49372B] hover:text-white hover:border-[#49372B] transition-all duration-300"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E5DACE] bg-white text-[#6B5847] transition-all duration-300 hover:border-[#49372B] hover:bg-[#49372B] hover:text-white"
             >
               <FaChevronRight className="text-xs" />
             </button>
@@ -411,7 +411,7 @@ function NewDrops() {
 
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-5 overflow-x-auto pb-4 px-1 scroll-smooth snap-x snap-mandatory"
+          className="flex w-full min-w-0 gap-3 overflow-x-auto overscroll-x-contain px-1 pb-4 scroll-smooth snap-x snap-mandatory sm:gap-5"
           style={{
             scrollbarWidth: "none",
             msOverflowStyle: "none",
@@ -448,10 +448,10 @@ function NewDrops() {
               <article
                 key={productId}
                 onClick={() => navigate(`/product/${productId}`)}
-                className="group relative min-w-[235px] sm:min-w-[265px] md:min-w-[285px] flex-shrink-0 snap-start cursor-pointer bg-white rounded-xl border border-[#EAE2D8] overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-[#49372B]/10"
+                className="group relative w-[72vw] min-w-[220px] max-w-[285px] flex-shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl border border-[#EAE2D8] bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-[#49372B]/10 sm:w-[265px] md:w-[285px]"
               >
 
-                <div className="h-[290px] sm:h-[310px] w-full bg-[#F5F0E9] flex items-center justify-center overflow-hidden relative">
+                <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden bg-[#F5F0E9] sm:aspect-[285/310]">
                   {productImage ? (
                     <img
                       src={productImage}
@@ -465,7 +465,7 @@ function NewDrops() {
 
                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-[#49372B]/[0.04] to-transparent" />
 
-                  <div className="absolute top-3 left-3 bg-[#FBF7F1]/95 text-[#6B503B] px-2.5 py-1 rounded-sm text-[9px] font-semibold tracking-[0.12em] uppercase border border-[#E8DCCB]">
+                  <div className="absolute left-2 top-2 max-w-[calc(100%-4rem)] rounded-sm border border-[#E8DCCB] bg-[#FBF7F1]/95 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.08em] text-[#6B503B] sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] sm:tracking-[0.12em]">
                     New Arrival
                   </div>
 
@@ -478,7 +478,7 @@ function NewDrops() {
                     aria-label={
                       isInWishlist ? "Remove from wishlist" : "Add to wishlist"
                     }
-                    className="absolute top-3 right-3 z-20 w-9 h-9 rounded-full bg-white/95 flex items-center justify-center border border-[#EAE2D8] shadow-sm transition-all duration-300 hover:bg-[#49372B] hover:border-[#49372B] active:scale-90"
+                    className="absolute right-2 top-2 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-[#EAE2D8] bg-white/95 shadow-sm transition-all duration-300 hover:border-[#49372B] hover:bg-[#49372B] active:scale-90 sm:right-3 sm:top-3 sm:h-9 sm:w-9"
                   >
                     <FaHeart
                       className={
@@ -490,17 +490,17 @@ function NewDrops() {
                   </button>
                 </div>
 
-                <div className="p-4 sm:p-4 bg-white">
-                  <h3 className="text-[#49372B] font-medium text-sm tracking-wide line-clamp-1 transition-colors duration-300 group-hover:text-[#A18468]">
+                <div className="min-w-0 bg-white p-3 sm:p-4">
+                  <h3 className="line-clamp-2 break-words text-sm font-medium tracking-wide text-[#49372B] transition-colors duration-300 group-hover:text-[#A18468] sm:line-clamp-1">
                     {productName}
                   </h3>
 
-                  <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-[#F0E9E1]">
-                    <p className="text-base font-semibold text-[#49372B]">
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-[#F0E9E1] pt-3">
+                    <p className="text-sm font-semibold text-[#49372B] sm:text-base">
                       ₹{Number(productPrice).toLocaleString("en-IN")}
                     </p>
 
-                    <span className="text-[9px] font-semibold tracking-[0.14em] uppercase text-[#8B7A69] group-hover:text-[#49372B] transition-colors flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.1em] text-[#8B7A69] transition-colors group-hover:text-[#49372B] sm:text-[9px] sm:tracking-[0.14em]">
                       Explore
                       <span className="text-sm leading-none transition-transform duration-300 group-hover:translate-x-1">
                         →

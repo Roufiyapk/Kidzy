@@ -394,15 +394,15 @@ function BestSellers() {
   }
 
   return (
-    <div className="bg-[#FBF9F6] px-4 sm:px-6 md:px-10 py-9 md:py-11 border-b border-[#EAE2D8]">
+    <div className="w-full min-w-0 overflow-hidden bg-[#FBF9F6] px-3 py-7 sm:px-5 sm:py-9 md:px-10 md:py-11 border-b border-[#EAE2D8]">
 
-      <div className="max-w-7xl mx-auto relative">
+      <div className="relative mx-auto w-full max-w-7xl min-w-0">
 
         {
 
 }
 
-        <div className="flex items-end justify-between mb-6 md:mb-8 px-1">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 px-1 sm:flex-row sm:items-end md:mb-8">
 
           <div className="flex flex-col gap-1">
 
@@ -410,7 +410,7 @@ function BestSellers() {
               Most Loved
             </p>
 
-            <h2 className="text-2xl md:text-3xl font-serif font-medium tracking-tight text-[#49372B]">
+            <h2 className="text-2xl font-serif font-medium tracking-tight text-[#49372B] sm:text-3xl">
               Best Sellers
             </h2>
 
@@ -422,7 +422,7 @@ function BestSellers() {
 
 }
 
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2 self-end sm:self-auto">
 
             {}
 
@@ -433,7 +433,7 @@ function BestSellers() {
                   "left"
                 )
               }
-              className="w-9 h-9 rounded-full bg-[#F3EAE0] border border-[#E4D8CA] flex items-center justify-center cursor-pointer text-[#6B503B] hover:bg-[#49372B] hover:text-white hover:border-[#49372B] transition-all"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E4D8CA] bg-[#F3EAE0] text-[#6B503B] transition-all hover:border-[#49372B] hover:bg-[#49372B] hover:text-white"
               aria-label="Previous products"
             >
               <FaChevronLeft className="text-xs" />
@@ -448,7 +448,7 @@ function BestSellers() {
                   "right"
                 )
               }
-              className="w-9 h-9 rounded-full bg-[#F3EAE0] border border-[#E4D8CA] flex items-center justify-center cursor-pointer text-[#6B503B] hover:bg-[#49372B] hover:text-white hover:border-[#49372B] transition-all"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#E4D8CA] bg-[#F3EAE0] text-[#6B503B] transition-all hover:border-[#49372B] hover:bg-[#49372B] hover:text-white"
               aria-label="Next products"
             >
               <FaChevronRight className="text-xs" />
@@ -464,7 +464,7 @@ function BestSellers() {
 
         <div
           ref={scrollRef}
-          className="flex gap-4 sm:gap-5 overflow-x-auto pb-5 px-1 scroll-smooth snap-x snap-mandatory"
+          className="flex w-full min-w-0 gap-3 overflow-x-auto overscroll-x-contain px-1 pb-5 scroll-smooth snap-x snap-mandatory sm:gap-5"
           style={{
             scrollbarWidth:
               "none",
@@ -543,14 +543,14 @@ function BestSellers() {
                         `/product/${productId}`
                       )
                     }
-                    className="group relative min-w-[235px] sm:min-w-[255px] md:min-w-[275px] flex-shrink-0 snap-start cursor-pointer bg-white rounded-xl border border-[#E8DED2] overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+                    className="group relative w-[72vw] min-w-[220px] max-w-[275px] flex-shrink-0 snap-start cursor-pointer overflow-hidden rounded-xl border border-[#E8DED2] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg sm:w-[255px] md:w-[275px]"
                   >
 
                     {
 
 }
 
-                    <div className="h-[290px] sm:h-[310px] w-full bg-[#F7F2EC] flex items-center justify-center overflow-hidden relative border-b border-[#EEE5DB]">
+                    <div className="relative flex aspect-[4/5] w-full items-center justify-center overflow-hidden border-b border-[#EEE5DB] bg-[#F7F2EC] sm:aspect-[275/310]">
 
                       {productImage ? (
 
@@ -561,7 +561,7 @@ function BestSellers() {
                           alt={
                             productName
                           }
-                          className="h-[90%] w-auto max-w-[94%] object-contain scale-100 group-hover:scale-105 transition duration-500 ease-out"
+                          className="h-[90%] w-auto max-w-[94%] object-contain scale-100 transition duration-500 ease-out group-hover:scale-105"
                           onError={(
                             event
                           ) => {
@@ -589,7 +589,7 @@ function BestSellers() {
 
                       {}
 
-                      <div className="absolute top-3 left-3 bg-[#F8F2EA]/95 text-[#6B503B] px-2.5 py-1 rounded-full text-[9px] font-semibold tracking-[0.12em] uppercase shadow-sm backdrop-blur-sm">
+                      <div className="absolute left-2 top-2 rounded-full bg-[#F8F2EA]/95 px-2 py-1 text-[8px] font-semibold uppercase tracking-[0.08em] text-[#6B503B] shadow-sm backdrop-blur-sm sm:left-3 sm:top-3 sm:px-2.5 sm:text-[9px] sm:tracking-[0.12em]">
                         Best Seller
                       </div>
 
@@ -613,7 +613,7 @@ function BestSellers() {
                             isInWishlist
                           );
                         }}
-                        className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full bg-[#FBF9F6]/95 backdrop-blur-sm flex items-center justify-center border border-[#E8DED2] hover:bg-white shadow-sm transition-transform active:scale-90 disabled:opacity-50"
+                        className="absolute right-2 top-2 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-[#E8DED2] bg-[#FBF9F6]/95 shadow-sm backdrop-blur-sm transition-transform hover:bg-white active:scale-90 disabled:opacity-50 sm:right-3 sm:top-3"
                         aria-label={
                           isInWishlist
                             ? "Remove from wishlist"
@@ -637,11 +637,11 @@ function BestSellers() {
 
 }
 
-                    <div className="p-3.5 sm:p-4 flex flex-col justify-between bg-white">
+                    <div className="flex min-w-0 flex-col justify-between bg-white p-3 sm:p-4">
 
                       <div className="mb-2">
 
-                        <h3 className="text-[#49372B] font-medium text-sm tracking-wide line-clamp-1 group-hover:text-[#A18468] transition-colors">
+                        <h3 className="line-clamp-2 break-words text-sm font-medium tracking-wide text-[#49372B] transition-colors group-hover:text-[#A18468] sm:line-clamp-1">
                           {
                             productName
                           }
@@ -649,7 +649,7 @@ function BestSellers() {
 
                       </div>
 
-                      <div className="flex items-center justify-between mt-1 pt-1">
+                      <div className="mt-1 flex flex-wrap items-center justify-between gap-2 pt-1">
 
                         <p className="text-base font-semibold text-[#49372B]">
                           ₹
@@ -660,7 +660,7 @@ function BestSellers() {
                           )}
                         </p>
 
-                        <span className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#A09487] group-hover:text-[#49372B] transition-colors flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-[#A09487] transition-colors group-hover:text-[#49372B] sm:text-[10px] sm:tracking-[0.12em]">
 
                           Explore
 

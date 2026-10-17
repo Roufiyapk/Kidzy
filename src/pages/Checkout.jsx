@@ -1444,10 +1444,10 @@ function Checkout() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F7F3EE] px-4 py-8 md:py-10">
-      <div className="w-full max-w-5xl mx-auto bg-white border border-[#e7ded5] rounded-2xl overflow-hidden shadow-sm">
+    <div className="min-h-screen bg-[#F7F3EE] px-3 py-5 sm:px-4 sm:py-8 md:py-10">
+      <div className="w-full max-w-5xl mx-auto bg-white border border-[#e7ded5] rounded-2xl overflow-hidden shadow-md">
         <div className="grid md:grid-cols-2">
-          <div className="p-6 md:p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             <div className="mb-6">
               <p className="text-xs uppercase tracking-[0.18em] text-stone-400 font-semibold">
                 Checkout
@@ -1674,34 +1674,79 @@ function Checkout() {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
+            <div className="mt-6">
+              <label className="block text-sm font-semibold text-stone-800 mb-3">
                 Payment Method
               </label>
 
-              <select
-                name="payment"
-                value={
-                  form.payment
-                }
-                onChange={
-                  handleChange
-                }
-                className="w-full border border-[#e7ded5] rounded-xl px-4 py-3 outline-none focus:border-stone-500 focus:ring-2 focus:ring-stone-200 bg-white"
-              >
-                <option value="cod">
-                  Cash on Delivery
-                </option>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label
+                  className={`relative flex items-center gap-3 rounded-2xl border-2 p-4 cursor-pointer transition-all duration-200 ${
+                    form.payment === "razorpay"
+                      ? "border-[#5A4030] bg-[#fffaf5] shadow-sm"
+                      : "border-[#e7ded5] bg-white hover:border-[#bda895]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="razorpay"
+                    checked={form.payment === "razorpay"}
+                    onChange={handleChange}
+                    className="h-4 w-4 shrink-0 accent-[#5A4030]"
+                  />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f3e9df] text-[#5A4030]">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
+                      <rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.7" />
+                      <path d="M3 10h18M7 15h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-stone-900">Online Payment</span>
+                    <span className="mt-1 block text-xs leading-5 text-stone-500">Pay securely online</span>
+                    <span className="mt-2 inline-flex rounded-full bg-[#f3e9df] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#5A4030]">Razorpay</span>
+                  </span>
+                  {form.payment === "razorpay" && (
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#5A4030] text-xs text-white">✓</span>
+                  )}
+                </label>
 
-                <option value="razorpay">
-                  Online Payment -
-                  Razorpay
-                </option>
-              </select>
+                <label
+                  className={`relative flex items-center gap-3 rounded-2xl border-2 p-4 cursor-pointer transition-all duration-200 ${
+                    form.payment === "cod"
+                      ? "border-[#5A4030] bg-[#fffaf5] shadow-sm"
+                      : "border-[#e7ded5] bg-white hover:border-[#bda895]"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="cod"
+                    checked={form.payment === "cod"}
+                    onChange={handleChange}
+                    className="h-4 w-4 shrink-0 accent-[#5A4030]"
+                  />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f3e9df] text-[#5A4030]">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6" aria-hidden="true">
+                      <rect x="3" y="6" width="18" height="12" rx="2.5" stroke="currentColor" strokeWidth="1.7" />
+                      <circle cx="12" cy="12" r="2.5" stroke="currentColor" strokeWidth="1.7" />
+                      <path d="M6 9v.01M18 15v.01" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-stone-900">Cash on Delivery</span>
+                    <span className="mt-1 block text-xs leading-5 text-stone-500">Pay when your order arrives</span>
+                    <span className="mt-2 inline-flex rounded-full bg-[#f3e9df] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[#5A4030]">Pay later</span>
+                  </span>
+                  {form.payment === "cod" && (
+                    <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#5A4030] text-xs text-white">✓</span>
+                  )}
+                </label>
+              </div>
             </div>
           </div>
 
-          <div className="p-6 md:p-8 bg-[#fcfaf7] border-t md:border-t-0 md:border-l border-[#e7ded5]">
+          <div className="p-4 sm:p-6 md:p-8 bg-[#fcfaf7] border-t md:border-t-0 md:border-l border-[#e7ded5]">
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-stone-900">
                 Order Summary

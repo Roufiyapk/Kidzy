@@ -651,11 +651,11 @@ function ProductDetails() {
 
 
   return (
-    <div className="px-4 md:px-10 py-10 bg-white min-h-screen">
+    <div className="w-full min-w-0 overflow-x-hidden bg-white px-3 py-5 sm:px-5 sm:py-7 md:px-8 lg:px-10 lg:py-10 min-h-screen">
 
       {}
 
-      <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-10 bg-white p-5 md:p-7 rounded-2xl shadow-md">
+      <div className="mx-auto grid w-full max-w-6xl min-w-0 grid-cols-1 items-start gap-6 rounded-2xl bg-white p-3 shadow-sm sm:gap-8 sm:p-5 md:p-6 lg:grid-cols-2 lg:gap-10 lg:p-7 lg:shadow-md">
 
         {}
 
@@ -667,10 +667,11 @@ function ProductDetails() {
             className="
               group
               relative
-              w-[400px]
-              max-w-full
+              w-full
+              max-w-[400px]
               mx-auto
-              aspect-[3/4]
+              aspect-[4/5]
+              sm:aspect-[3/4]
               bg-white
               rounded-2xl
               overflow-hidden
@@ -728,7 +729,7 @@ function ProductDetails() {
           {}
 
           {productImages.length > 1 && (
-            <div className="flex gap-3 mt-4 overflow-x-auto pb-1">
+            <div className="mt-4 flex max-w-full gap-2 overflow-x-auto pb-2 sm:gap-3">
 
               {productImages.map(
                 (image, index) => (
@@ -756,7 +757,7 @@ function ProductDetails() {
                     <img
                       src={image}
                       alt={`${product.name} ${index + 1}`}
-                      className="w-20 h-24 object-contain bg-white"
+                      className="h-20 w-16 bg-white object-contain sm:h-24 sm:w-20"
                     />
                   </button>
                 )
@@ -769,11 +770,11 @@ function ProductDetails() {
 
         {}
 
-        <div className="pt-2">
+        <div className="min-w-0 pt-1 sm:pt-2">
 
           {}
 
-          <h1 className="text-2xl font-bold">
+          <h1 className="break-words text-xl font-bold leading-snug sm:text-2xl lg:text-3xl">
             {product.name}
           </h1>
 
@@ -817,7 +818,7 @@ function ProductDetails() {
 
           {}
 
-          <p className="text-3xl font-bold mt-5">
+          <p className="mt-4 text-2xl font-bold sm:mt-5 sm:text-3xl">
             ₹{product.price}
           </p>
 
@@ -825,13 +826,13 @@ function ProductDetails() {
 
           {}
 
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-6 border-t border-gray-200 pt-5 sm:mt-8 sm:pt-6">
 
             <h2 className="text-lg font-semibold text-gray-900">
               Product Description
             </h2>
 
-            <p className="text-sm text-gray-600 mt-3 leading-7">
+            <p className="mt-3 break-words text-sm leading-6 text-gray-600 sm:leading-7">
               {product.description ||
                 "A stylish and comfortable choice for little ones, designed for everyday wear and special moments."}
             </p>
@@ -841,13 +842,13 @@ function ProductDetails() {
           {}
 
           {hasSizes && (
-            <div className="mt-8">
+            <div className="mt-6 sm:mt-8">
 
               <h3 className="text-xl font-semibold mb-4">
                 Select Size
               </h3>
 
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              <div className="flex max-w-full gap-2 overflow-x-auto pb-3 sm:gap-3 scrollbar-thin">
 
                 {product.sizes?.map(
                   (sizeObj) => {
@@ -875,9 +876,10 @@ function ProductDetails() {
                           sizeOutOfStock
                         }
                         className={`
-                          min-w-[110px]
+                          min-w-[88px]
                           px-3
                           py-3
+                          sm:min-w-[110px]
                           border
                           rounded-xl
                           text-sm
@@ -912,7 +914,7 @@ function ProductDetails() {
 
           {}
 
-          <div className="flex gap-3 mt-7">
+          <div className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row">
 
             {}
 
@@ -926,8 +928,14 @@ function ProductDetails() {
               )}
               className={`
                 flex-1
-                h-14
+                min-h-12
+                h-12
+                w-full
                 rounded-full
+                px-3
+                text-sm
+                sm:h-14
+                sm:text-base
                 border
                 font-semibold
                 text-base
@@ -954,8 +962,14 @@ function ProductDetails() {
               )}
               className={`
                 flex-1
-                h-14
+                min-h-12
+                h-12
+                w-full
                 rounded-full
+                px-3
+                text-sm
+                sm:h-14
+                sm:text-base
                 font-semibold
                 text-base
                 transition
@@ -1141,15 +1155,15 @@ function ProductDetails() {
 
       {}
 
-      <section className="max-w-4xl mx-auto mt-8 bg-white rounded-2xl shadow-md p-5 md:p-7">
+      <section className="mx-auto mt-6 w-full max-w-4xl min-w-0 rounded-2xl bg-white p-3 shadow-sm sm:mt-8 sm:p-5 md:p-7 md:shadow-md">
 
         {}
 
-        <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-5">
+        <div className="flex flex-col items-start justify-between gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center">
 
           <div>
 
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
               Ratings & Reviews
             </h2>
 
@@ -1163,9 +1177,9 @@ function ProductDetails() {
           </div>
 
           {reviews.length > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
 
-              <div className="text-3xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-gray-900 sm:text-3xl">
                 {averageRating.toFixed(1)}
               </div>
 
@@ -1203,11 +1217,11 @@ function ProductDetails() {
 
         {}
 
-        <div className="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-5 mt-6">
+        <div className="mt-5 grid min-w-0 grid-cols-1 gap-4 sm:mt-6 sm:gap-5 md:grid-cols-[180px_minmax(0,1fr)]">
 
           {}
 
-          <div className="bg-gray-50 rounded-2xl p-5 flex flex-col items-center justify-center text-center">
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-gray-50 p-4 text-center sm:p-5">
 
             <p className="text-sm text-gray-500">
               Product Rating
@@ -1236,7 +1250,7 @@ function ProductDetails() {
 
           {}
 
-          <div className="border border-gray-200 rounded-2xl p-5">
+          <div className="min-w-0 rounded-2xl border border-gray-200 p-3 sm:p-5">
 
             <h3 className="text-lg font-semibold text-gray-900">
               Write a Review
@@ -1248,7 +1262,7 @@ function ProductDetails() {
 
             {}
 
-            <div className="flex items-center gap-1 mb-4">
+            <div className="mb-4 flex flex-wrap items-center gap-1">
 
               {[1, 2, 3, 4, 5].map(
                 (star) => (
@@ -1367,7 +1381,7 @@ function ProductDetails() {
 
         <div className="mt-7">
 
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex flex-col items-start justify-between gap-1 sm:flex-row sm:items-center">
 
             <div>
 
@@ -1385,7 +1399,7 @@ function ProductDetails() {
 
           {reviews.length === 0 ? (
 
-            <div className="border border-dashed border-gray-300 rounded-2xl py-10 px-5 text-center">
+            <div className="rounded-2xl border border-dashed border-gray-300 px-4 py-8 text-center sm:px-5 sm:py-10">
 
               <p className="text-gray-600 font-medium">
                 No reviews yet
@@ -1425,7 +1439,10 @@ function ProductDetails() {
                         border
                         border-gray-200
                         rounded-2xl
-                        p-4
+                        min-w-0
+                        break-words
+                        p-3
+                        sm:p-4
                         md:p-5
                       "
                     >
@@ -1490,7 +1507,7 @@ function ProductDetails() {
 
                       {}
 
-                      <p className="text-gray-600 mt-2 leading-6">
+                      <p className="mt-2 break-words leading-6 text-gray-600">
                         {review.comment}
                       </p>
 

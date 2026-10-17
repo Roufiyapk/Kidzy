@@ -83,8 +83,8 @@ function ParentReviews() {
 
   if (loading) {
     return (
-      <section className="bg-gradient-to-br from-[#D8C8B7] via-[#E8DED2] to-[#C7D0C2] px-4 sm:px-6 md:px-14 py-14 md:py-16 border-b border-[#E7DED5]">
-        <div className="max-w-7xl mx-auto relative">
+      <section className="w-full min-w-0 overflow-hidden bg-gradient-to-br from-[#D8C8B7] via-[#E8DED2] to-[#C7D0C2] px-3 py-8 sm:px-5 sm:py-10 md:px-14 md:py-16 border-b border-[#E7DED5]">
+        <div className="relative mx-auto w-full max-w-7xl min-w-0">
           <p className="text-center py-20 font-medium text-[#8B7A69]">
             Loading reviews...
           </p>
@@ -98,10 +98,10 @@ function ParentReviews() {
   }
 
   return (
-    <section className="bg-gradient-to-br from-[#D8C8B7] via-[#E8DED2] to-[#C7D0C2] px-4 sm:px-6 md:px-14 py-14 md:py-16 border-b border-[#E7DED5]">
-      <div className="max-w-7xl mx-auto relative">
+    <section className="w-full min-w-0 overflow-hidden bg-gradient-to-br from-[#D8C8B7] via-[#E8DED2] to-[#C7D0C2] px-3 py-8 sm:px-5 sm:py-10 md:px-14 md:py-16 border-b border-[#E7DED5]">
+      <div className="relative mx-auto w-full max-w-7xl min-w-0">
 
-        <div className="flex items-end justify-between gap-4 mb-8 md:mb-10 pl-1">
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 pl-1 sm:flex-row sm:items-end md:mb-10">
 
           <div className="flex flex-col gap-1">
 
@@ -109,7 +109,7 @@ function ParentReviews() {
               Real Experiences
             </p>
 
-            <h2 className="text-2xl md:text-4xl font-sans font-semibold tracking-[-0.035em] text-[#3F3026]">
+            <h2 className="text-2xl font-sans font-semibold tracking-[-0.035em] text-[#3F3026] sm:text-3xl md:text-4xl">
               What Parents Say
             </h2>
 
@@ -118,7 +118,7 @@ function ParentReviews() {
           </div>
 
           {reviews.length > 1 && (
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2 self-end sm:self-auto">
 
               <button
                 type="button"
@@ -126,8 +126,9 @@ function ParentReviews() {
                   handleScroll("left")
                 }
                 className="
-                  w-10
                   h-10
+                  w-10
+                  shrink-0
                   rounded-full
                   bg-white/90
                   border
@@ -154,8 +155,9 @@ function ParentReviews() {
                   handleScroll("right")
                 }
                 className="
-                  w-10
                   h-10
+                  w-10
+                  shrink-0
                   rounded-full
                   bg-white/90
                   border
@@ -185,9 +187,10 @@ function ParentReviews() {
           ref={scrollRef}
           className="
             flex
-            gap-4 sm:gap-5 sm:p-6 md:gap-6
-            overflow-x-auto
-            pb-6
+            w-full min-w-0
+            gap-3 sm:gap-5 md:gap-6
+            overflow-x-auto overscroll-x-contain
+            pb-5 sm:pb-6
             px-1 sm:px-2
             scroll-smooth
             snap-x
@@ -225,13 +228,13 @@ function ParentReviews() {
               className="
                 group
                 relative
-                w-[280px]
-                sm:w-[310px]
-                md:w-[340px]
-                min-w-[280px]
-                sm:min-w-[310px]
-                md:min-w-[340px]
+                w-[min(82vw,340px)]
+                min-w-[min(82vw,280px)]
                 max-w-[340px]
+                sm:w-[310px]
+                sm:min-w-[310px]
+                md:w-[340px]
+                md:min-w-[340px]
                 flex-shrink-0
                 snap-start
                 bg-white/95
@@ -248,9 +251,9 @@ function ParentReviews() {
               "
             >
 
-              <div className="p-5 sm:p-6">
+              <div className="min-w-0 p-4 sm:p-5 md:p-6">
 
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
 
                   <div
                     className="
@@ -271,7 +274,7 @@ function ParentReviews() {
 
                   <div className="min-w-0">
 
-                    <h3 className="text-sm font-semibold tracking-tight text-[#49372B] truncate">
+                    <h3 className="truncate text-sm font-semibold tracking-tight text-[#49372B]">
                       {review.userName ||
                         "Customer"}
                     </h3>
@@ -313,20 +316,20 @@ function ParentReviews() {
                     "Great Product"}
                 </h4>
 
-                <p className="text-sm font-normal tracking-[0.005em] text-[#817467] leading-7 mt-3 line-clamp-6">
+                <p className="mt-3 break-words text-sm font-normal leading-6 tracking-[0.005em] text-[#817467] sm:leading-7 line-clamp-6">
                   {review.comment}
                 </p>
 
               </div>
 
               {review.productName && (
-                <div className="border-t border-[#EEE5DB] px-5 py-4 bg-[#FAF7F2]">
+                <div className="border-t border-[#EEE5DB] bg-[#FAF7F2] px-4 py-4 sm:px-5">
 
                   <p className="text-[10px] uppercase tracking-[0.14em] text-[#A99A8B] font-semibold mb-1">
                     Product
                   </p>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
 
                     {review.productImage && (
                       <img
@@ -336,11 +339,11 @@ function ParentReviews() {
                         alt={
                           review.productName
                         }
-                        className="w-12 h-14 object-contain bg-[#F5F0E9] rounded-lg border border-[#EAE2D8] flex-shrink-0"
+                        className="h-14 w-12 flex-shrink-0 rounded-lg border border-[#EAE2D8] bg-[#F5F0E9] object-contain"
                       />
                     )}
 
-                    <p className="text-xs font-medium tracking-tight text-[#49372B] line-clamp-2">
+                    <p className="min-w-0 break-words text-xs font-medium tracking-tight text-[#49372B] line-clamp-2">
                       {review.productName}
                     </p>
 
